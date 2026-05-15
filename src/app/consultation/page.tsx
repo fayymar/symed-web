@@ -15,7 +15,7 @@ export default function SymptomsPage() {
 
   useEffect(() => {
     reset();
-  }, [reset]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async () => {
     if (text.trim().length < 5) {

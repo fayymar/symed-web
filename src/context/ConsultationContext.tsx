@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
 interface Specialist {
   name: string;
@@ -48,6 +48,8 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
   const update = (patch: Partial<ConsultationState>) =>
     setState(s => ({ ...s, ...patch }));
 
+  const reset = useCallback(() => setState(initial), []);
+
   return (
     <ConsultationContext.Provider value={{
       ...state,
@@ -59,7 +61,7 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
       addAnamnesisAnswer: a => setState(s => ({ ...s, anamnesisAnswers: [...s.anamnesisAnswers, a] })),
       setDuration: duration => update({ duration }),
       setResult: result => update({ result }),
-      reset: () => setState(initial),
+      reset,
     }}>
       {children}
     </ConsultationContext.Provider>
