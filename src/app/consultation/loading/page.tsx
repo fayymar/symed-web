@@ -12,7 +12,6 @@ export default function LoadingPage() {
   const called = useRef(false);
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     if (!sessionId) { router.push('/consultation'); return; }
     if (called.current) return;
     called.current = true;

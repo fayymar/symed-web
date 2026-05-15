@@ -14,9 +14,8 @@ export default function SymptomsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     reset();
-  }, [router, reset]);
+  }, [reset]);
 
   const handleSubmit = async () => {
     if (text.trim().length < 5) {
@@ -26,8 +25,8 @@ export default function SymptomsPage() {
     setError('');
     setLoading(true);
     try {
-      const user = auth.getUser()!;
-      const data = await api.startConsultation(user.id, text.trim());
+      const user = auth.getUser();
+      const data = await api.startConsultation(user?.id ?? null, text.trim());
 
       if (data.red_flag) {
         router.push(`/consultation/emergency?msg=${encodeURIComponent(data.red_flag.text)}`);
@@ -49,7 +48,7 @@ export default function SymptomsPage() {
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')} className="text-gray-400 hover:text-gray-600 text-2xl">←</button>
+          <button onClick={() => router.push(auth.isLoggedIn() ? '/dashboard' : '/')} className="text-gray-400 hover:text-gray-600 text-2xl">←</button>
           <span className="font-semibold text-gray-900">Новая консультация</span>
         </div>
       </header>

@@ -18,7 +18,6 @@ export default function QuestionsPage() {
   const isDone = currentIndex >= questions.length;
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     if (!sessionId) { router.push('/consultation'); return; }
   }, [sessionId, router]);
 
@@ -28,8 +27,8 @@ export default function QuestionsPage() {
       const send = async () => {
         setSending(true);
         try {
-          const user = auth.getUser()!;
-          await api.sendAnswers(sessionId, user.id, answers);
+          const user = auth.getUser();
+          await api.sendAnswers(sessionId, user?.id ?? null, answers);
           // Get duration question
           const data = await api.sendDuration(sessionId, '');
           setAnamnesisQuestions(data.anamnesis_questions || []);

@@ -11,18 +11,19 @@ export const api = {
       body: JSON.stringify(data),
     }).then(r => r.json()),
 
-  startConsultation: (userId: number, symptoms: string) =>
+  // user_id опционален — гости могут консультироваться без входа
+  startConsultation: (userId: number | null, symptoms: string) =>
     fetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, symptoms }),
+      body: JSON.stringify({ ...(userId ? { user_id: userId } : {}), symptoms }),
     }).then(r => r.json()),
 
-  sendAnswers: (sessionId: string, userId: number, answers: string[]) =>
+  sendAnswers: (sessionId: string, userId: number | null, answers: string[]) =>
     fetch(`${API_BASE}/api/consultation/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, user_id: userId, answers }),
+      body: JSON.stringify({ session_id: sessionId, ...(userId ? { user_id: userId } : {}), answers }),
     }).then(r => r.json()),
 
   sendDuration: (sessionId: string, duration: string) =>
@@ -41,4 +42,15 @@ export const api = {
 
   getConsultations: (userId: number) =>
     fetch(`${API_BASE}/api/consultations/${userId}`).then(r => r.json()),
+
+  // Web auth — код для входа через бота
+  requestAuthCode: (code: string) =>
+    fetch(`${API_BASE}/api/auth/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }).then(r => r.json()),
+
+  checkAuthStatus: (code: string) =>
+    fetch(`${API_BASE}/api/auth/status/${code}`).then(r => r.json()),
 };

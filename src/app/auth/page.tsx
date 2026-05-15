@@ -1,19 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, TelegramUser } from '@/lib/auth';
+import { api } from '@/lib/api';
 
-declare global {
-  interface Window {
-    onTelegramAuth: (user: TelegramUser) => void;
-  }
+function generateCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
+
+type Status = 'idle' | 'waiting' | 'success' | 'error';
 
 export default function AuthPage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState<Status>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const codeRef = useRef('');
 
   useEffect(() => {
     if (auth.isLoggedIn()) {
@@ -21,29 +25,70 @@ export default function AuthPage() {
       return;
     }
 
-    window.onTelegramAuth = async (user: TelegramUser) => {
-      setError(null);
-      setLoading(true);
-      try {
-        await auth.verifyAndSetUser(user);
-        router.push('/dashboard');
-      } catch (err) {
-        setError('Не удалось подтвердить вход. Попробуйте ещё раз.');
-        console.error('Auth error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Генерируем код и регистрируем на бэкенде
+    const newCode = generateCode();
+    setCode(newCode);
+    codeRef.current = newCode;
 
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', 'medgg_bot');
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.async = true;
-    document.getElementById('telegram-widget')?.appendChild(script);
+    api.requestAuthCode(newCode)
+      .then(() => setStatus('waiting'))
+      .catch(() => setErrorMsg('Не удалось связаться с сервером. Попробуйте обновить страницу.'));
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [router]);
+
+  // Запускаем polling когда статус стал waiting
+  useEffect(() => {
+    if (status !== 'waiting') return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const data = await api.checkAuthStatus(codeRef.current);
+        if (data.verified) {
+          clearInterval(pollRef.current!);
+          const user: TelegramUser = {
+            id: data.id,
+            first_name: data.first_name || '',
+            last_name: data.last_name,
+            username: data.username,
+            photo_url: data.photo_url,
+            auth_date: data.auth_date,
+            hash: '',
+          };
+          auth.setUser(user);
+          setStatus('success');
+          setTimeout(() => router.push('/dashboard'), 800);
+        }
+      } catch {
+        // Тихо игнорируем сетевые ошибки, продолжаем polling
+      }
+    }, 2000);
+
+    // Таймаут 10 минут
+    const timeout = setTimeout(() => {
+      clearInterval(pollRef.current!);
+      setStatus('error');
+      setErrorMsg('Время ожидания истекло. Обновите страницу и попробуйте снова.');
+    }, 600_000);
+
+    return () => {
+      clearInterval(pollRef.current!);
+      clearTimeout(timeout);
+    };
+  }, [status, router]);
+
+  const handleRetry = () => {
+    const newCode = generateCode();
+    setCode(newCode);
+    codeRef.current = newCode;
+    setErrorMsg('');
+    setStatus('idle');
+    api.requestAuthCode(newCode)
+      .then(() => setStatus('waiting'))
+      .catch(() => setErrorMsg('Ошибка сервера. Попробуйте позже.'));
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-6">
@@ -51,36 +96,81 @@ export default function AuthPage() {
         <span className="text-5xl mb-6 block">🩺</span>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Войти в СимптоМед</h1>
         <p className="text-gray-500 mb-8">
-          Используйте ваш Telegram аккаунт — без паролей и регистрации
+          Войдите через Telegram — без паролей
         </p>
 
-        {loading && (
-          <div className="mb-4 text-blue-600 text-sm font-medium animate-pulse">
-            Проверяем вход...
+        {status === 'success' ? (
+          <div className="py-6">
+            <div className="text-5xl mb-4">✅</div>
+            <p className="text-green-700 font-semibold text-lg">Вход выполнен!</p>
+            <p className="text-gray-400 text-sm mt-1">Перенаправляем...</p>
           </div>
+        ) : (
+          <>
+            {/* Инструкция */}
+            <div className="bg-blue-50 rounded-xl p-5 mb-6 text-left">
+              <p className="text-sm font-semibold text-blue-800 mb-3">Как войти:</p>
+              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+                <li>Откройте <span className="font-semibold">@medgg_bot</span> в Telegram</li>
+                <li>Отправьте боту этот код:</li>
+              </ol>
+            </div>
+
+            {/* Код */}
+            <div className="bg-gray-900 rounded-xl py-5 px-8 mb-6 inline-block w-full">
+              <span className="text-4xl font-mono font-bold tracking-[0.3em] text-white">
+                {code || '------'}
+              </span>
+            </div>
+
+            {/* Кнопка открыть бот */}
+            <a
+              href={`https://t.me/medgg_bot`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-4 rounded-xl font-semibold text-base hover:bg-blue-600 transition mb-4"
+            >
+              <span>Открыть @medgg_bot</span>
+              <span>→</span>
+            </a>
+
+            {/* Статус */}
+            {status === 'waiting' && !errorMsg && (
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mt-2">
+                <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                Ожидаем подтверждения...
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="mt-4 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 border border-red-200">
+                {errorMsg}
+                <button
+                  onClick={handleRetry}
+                  className="block mt-2 text-red-700 font-semibold underline"
+                >
+                  Получить новый код
+                </button>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 mt-6">
+              Код действителен 10 минут
+            </p>
+          </>
         )}
 
-        {error && (
-          <div className="mb-4 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 border border-red-200">
-            {error}
-          </div>
-        )}
-
-        <div id="telegram-widget" className="flex justify-center mb-6" />
-
-        <p className="text-xs text-gray-400">
-          Нажимая кнопку вы соглашаетесь с{' '}
-          <a href="#" className="underline">условиями использования</a>
-        </p>
-
+        {/* Или продолжить без входа */}
         <div className="mt-8 pt-6 border-t">
-          <p className="text-sm text-gray-500 mb-3">Или откройте в Telegram:</p>
-          <a
-            href="https://t.me/medgg_bot"
-            className="inline-flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-600 transition"
-          >
-            <span>Открыть @medgg_bot</span>
-          </a>
+          <p className="text-sm text-gray-400 mb-3">
+            Или{' '}
+            <button
+              onClick={() => router.push('/consultation')}
+              className="text-blue-500 hover:underline font-medium"
+            >
+              получить консультацию без входа
+            </button>
+          </p>
         </div>
       </div>
     </main>

@@ -7,18 +7,18 @@ import { auth } from '@/lib/auth';
 import { useConsultation } from '@/context/ConsultationContext';
 
 const URGENCY_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-  high:   { color: 'bg-red-50 border-red-300 text-red-800',    label: 'Срочно',         icon: '🚨' },
-  medium: { color: 'bg-yellow-50 border-yellow-300 text-yellow-800', label: 'В ближайшее время', icon: '⚠️' },
-  low:    { color: 'bg-green-50 border-green-300 text-green-800',  label: 'Планово',        icon: '✅' },
+  high:   { color: 'bg-red-50 border-red-300 text-red-800',              label: 'Срочно',              icon: '🚨' },
+  medium: { color: 'bg-yellow-50 border-yellow-300 text-yellow-800',     label: 'В ближайшее время',   icon: '⚠️' },
+  low:    { color: 'bg-green-50 border-green-300 text-green-800',        label: 'Планово',             icon: '✅' },
 };
 
 export default function ResultPage() {
   const router = useRouter();
-  const { result, symptoms } = useConsultation();
+  const { result } = useConsultation();
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
+  const isLoggedIn = auth.isLoggedIn();
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     if (!result) { router.push('/consultation'); return; }
   }, [result, router]);
 
@@ -31,6 +31,14 @@ export default function ResultPage() {
       <header className="bg-white border-b px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <span className="font-semibold text-gray-900">Результат консультации</span>
+          {isLoggedIn && (
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="ml-auto text-sm text-gray-400 hover:text-gray-600"
+            >
+              Личный кабинет
+            </button>
+          )}
         </div>
       </header>
 
@@ -65,10 +73,7 @@ export default function ResultPage() {
                       <span className="text-sm font-medium text-blue-600">{spec.percentage}%</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${spec.percentage}%` }}
-                      />
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${spec.percentage}%` }} />
                     </div>
                     {spec.description && (
                       <p className="text-sm text-gray-500">{spec.description}</p>
@@ -77,6 +82,25 @@ export default function ResultPage() {
                 </div>
               ))}
             </div>
+
+            {/* Записаться к врачу — требует авторизацию */}
+            {isLoggedIn ? (
+              <button className="mt-5 w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition">
+                📅 Записаться к врачу
+              </button>
+            ) : (
+              <div className="mt-5 bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                <p className="text-sm text-blue-700 mb-3">
+                  Чтобы записаться к врачу, войдите через Telegram
+                </p>
+                <Link
+                  href="/auth"
+                  className="inline-block bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition"
+                >
+                  Войти и записаться
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -121,7 +145,7 @@ export default function ResultPage() {
             Новая консультация
           </Link>
           <Link
-            href="/dashboard"
+            href={isLoggedIn ? '/dashboard' : '/'}
             className="w-full bg-white border-2 border-gray-200 text-gray-700 py-4 rounded-xl font-semibold text-center hover:bg-gray-50 transition"
           >
             На главную

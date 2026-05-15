@@ -14,7 +14,6 @@ export default function DurationPage() {
   const { sessionId, setDuration } = useConsultation();
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     if (!sessionId) { router.push('/consultation'); return; }
   }, [sessionId, router]);
 
