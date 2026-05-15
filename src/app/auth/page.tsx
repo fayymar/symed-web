@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { auth, TelegramUser } from '@/lib/auth';
 
 declare global {
   interface Window {
-    onTelegramAuth: (user: any) => void;
+    onTelegramAuth: (user: TelegramUser) => void;
   }
 }
 
 export default function AuthPage() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (auth.isLoggedIn()) {
@@ -19,9 +21,18 @@ export default function AuthPage() {
       return;
     }
 
-    window.onTelegramAuth = (user) => {
-      auth.setUser(user);
-      router.push('/dashboard');
+    window.onTelegramAuth = async (user: TelegramUser) => {
+      setError(null);
+      setLoading(true);
+      try {
+        await auth.verifyAndSetUser(user);
+        router.push('/dashboard');
+      } catch (err) {
+        setError('Не удалось подтвердить вход. Попробуйте ещё раз.');
+        console.error('Auth error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     const script = document.createElement('script');
@@ -42,6 +53,18 @@ export default function AuthPage() {
         <p className="text-gray-500 mb-8">
           Используйте ваш Telegram аккаунт — без паролей и регистрации
         </p>
+
+        {loading && (
+          <div className="mb-4 text-blue-600 text-sm font-medium animate-pulse">
+            Проверяем вход...
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 border border-red-200">
+            {error}
+          </div>
+        )}
 
         <div id="telegram-widget" className="flex justify-center mb-6" />
 

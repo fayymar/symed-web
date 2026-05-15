@@ -31,8 +31,27 @@ export const auth = {
   isLoggedIn: (): boolean => {
     const user = auth.getUser();
     if (!user) return false;
-    // Check auth is not older than 24 hours
     const age = Date.now() / 1000 - user.auth_date;
     return age < 86400;
+  },
+
+  /**
+   * Verifies Telegram Login Widget data via server-side HMAC check,
+   * then saves the user to localStorage. Throws on failure.
+   */
+  verifyAndSetUser: async (user: TelegramUser): Promise<void> => {
+    const res = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error ?? 'Verification failed');
+    }
+
+    auth.setUser(user);
   },
 };
