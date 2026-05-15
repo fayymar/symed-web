@@ -14,6 +14,7 @@ type Status = 'idle' | 'waiting' | 'success' | 'error';
 export default function AuthPage() {
   const router = useRouter();
   const [code, setCode] = useState('');
+  const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -34,7 +35,15 @@ export default function AuthPage() {
       .then(() => setStatus('waiting'))
       .catch(() => setErrorMsg('Не удалось связаться с сервером. Попробуйте обновить страницу.'));
 
-    return () => {
+    const copyCode = () => {
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [router]);
@@ -73,7 +82,15 @@ export default function AuthPage() {
       setErrorMsg('Время ожидания истекло. Обновите страницу и попробуйте снова.');
     }, 600_000);
 
-    return () => {
+    const copyCode = () => {
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return () => {
       clearInterval(pollRef.current!);
       clearTimeout(timeout);
     };
@@ -88,6 +105,14 @@ export default function AuthPage() {
     api.requestAuthCode(newCode)
       .then(() => setStatus('waiting'))
       .catch(() => setErrorMsg('Ошибка сервера. Попробуйте позже.'));
+  };
+
+  const copyCode = () => {
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
@@ -117,10 +142,16 @@ export default function AuthPage() {
             </div>
 
             {/* Код */}
-            <div className="bg-gray-900 rounded-xl py-5 px-8 mb-6 inline-block w-full">
+            <div className="relative bg-gray-900 rounded-xl py-5 px-8 mb-6 w-full flex items-center justify-center">
               <span className="text-4xl font-mono font-bold tracking-[0.3em] text-white">
                 {code || '------'}
               </span>
+              <button
+                onClick={copyCode}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded-lg transition"
+              >
+                {copied ? '✅ Скопировано' : '📋 Копировать'}
+              </button>
             </div>
 
             {/* Кнопка открыть бот */}

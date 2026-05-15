@@ -16,6 +16,7 @@ export default function ResultPage() {
   const router = useRouter();
   const { result } = useConsultation();
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
+  const [comingSoon, setComingSoon] = useState(false);
   const isLoggedIn = auth.isLoggedIn();
 
   useEffect(() => {
@@ -85,9 +86,19 @@ export default function ResultPage() {
 
             {/* Записаться к врачу — требует авторизацию */}
             {isLoggedIn ? (
-              <button className="mt-5 w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition">
-                📅 Записаться к врачу
-              </button>
+              <div className="mt-5">
+                <button
+                  onClick={() => setComingSoon(true)}
+                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
+                >
+                  📅 Записаться к врачу
+                </button>
+                {comingSoon && (
+                  <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-sm text-yellow-800 text-center">
+                    🔧 Функция в разработке — скоро появится!
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="mt-5 bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
                 <p className="text-sm text-blue-700 mb-3">
