@@ -18,6 +18,59 @@ const empty: ProfileForm = {
   smoking: 'no', hereditary: '',
 };
 
+const CHRONIC_SUGGESTIONS = ['Диабет', 'Гипертония', 'Астма', 'Артрит', 'Гастрит', 'Ожирение', 'Аритмия', 'Мигрень'];
+const ALLERGY_SUGGESTIONS = ['Пенициллин', 'Аспирин', 'Ибупрофен', 'Сульфаниламиды', 'Кодеин', 'Новокаин', 'Нет'];
+const HEREDITARY_SUGGESTIONS = ['Диабет', 'Гипертония', 'Болезни сердца', 'Инсульт', 'Рак', 'Астма', 'Нет'];
+const SMOKING_OPTIONS = [
+  { value: 'no', label: 'Не курю' },
+  { value: 'yes', label: 'Курю' },
+  { value: 'quit', label: 'Бросил(а)' },
+];
+
+function toggleChip(current: string, chip: string): string {
+  const items = current.split(',').map(s => s.trim()).filter(Boolean);
+  const idx = items.findIndex(s => s.toLowerCase() === chip.toLowerCase());
+  if (idx >= 0) {
+    items.splice(idx, 1);
+  } else {
+    items.push(chip);
+  }
+  return items.join(', ');
+}
+
+function hasChip(current: string, chip: string): boolean {
+  return current.split(',').map(s => s.trim()).some(s => s.toLowerCase() === chip.toLowerCase());
+}
+
+function Chips({ suggestions, value, onChange }: {
+  suggestions: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {suggestions.map(chip => {
+        const active = hasChip(value, chip);
+        return (
+          <button
+            key={chip}
+            type="button"
+            onClick={() => onChange(toggleChip(value, chip))}
+            className="text-xs px-3 py-1.5 rounded-full font-medium transition"
+            style={{
+              background: active ? 'var(--s-blue)' : 'var(--s-fill-secondary)',
+              color: active ? '#fff' : 'var(--s-secondary)',
+              border: active ? '1px solid var(--s-blue)' : '1px solid var(--s-separator)',
+            }}
+          >
+            {active ? <span className="inline-flex items-center gap-1"><Check size={10} strokeWidth={3} /> {chip}</span> : chip}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [form, setForm] = useState<ProfileForm>(empty);
@@ -48,6 +101,9 @@ export default function ProfilePage() {
 
   const set = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [key]: e.target.value }));
+
+  const setVal = (key: keyof ProfileForm) => (v: string) =>
+    setForm(f => ({ ...f, [key]: v }));
 
   const handleSave = async () => {
     if (!form.full_name.trim()) { setError('Укажите имя'); return; }
@@ -161,31 +217,57 @@ export default function ProfilePage() {
         </section>
 
         {/* Медицинская история */}
-        <section className="rounded-3xl p-6 flex flex-col gap-4"
+        <section className="rounded-3xl p-6 flex flex-col gap-5"
           style={{ background: 'var(--s-surface)', border: '1px solid var(--s-separator)' }}>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2">
             <Heart size={16} style={{ color: 'var(--s-red)' }} />
             <h2 className="font-semibold" style={{ color: 'var(--s-label)' }}>Медицинская история</h2>
           </div>
+
+          {/* Хронические */}
           <div>
             <label className="block text-xs font-medium mb-1.5" style={labelStyle}>Хронические заболевания</label>
-            <input value={form.chronic_diseases} onChange={set('chronic_diseases')} placeholder="Диабет, гипертония (через запятую)" className={inputCls} style={inputStyle} />
+            <input value={form.chronic_diseases} onChange={set('chronic_diseases')}
+              placeholder="Или выберите ниже..." className={inputCls} style={inputStyle} />
+            <Chips suggestions={CHRONIC_SUGGESTIONS} value={form.chronic_diseases} onChange={setVal('chronic_diseases')} />
           </div>
+
+          {/* Аллергии */}
           <div>
             <label className="block text-xs font-medium mb-1.5" style={labelStyle}>Аллергии на лекарства</label>
-            <input value={form.drug_allergies} onChange={set('drug_allergies')} placeholder="Пенициллин, аспирин..." className={inputCls} style={inputStyle} />
+            <input value={form.drug_allergies} onChange={set('drug_allergies')}
+              placeholder="Или выберите ниже..." className={inputCls} style={inputStyle} />
+            <Chips suggestions={ALLERGY_SUGGESTIONS} value={form.drug_allergies} onChange={setVal('drug_allergies')} />
           </div>
+
+          {/* Наследственные */}
           <div>
             <label className="block text-xs font-medium mb-1.5" style={labelStyle}>Наследственные заболевания</label>
-            <input value={form.hereditary} onChange={set('hereditary')} placeholder="Диабет, болезни сердца (через запятую)" className={inputCls} style={inputStyle} />
+            <input value={form.hereditary} onChange={set('hereditary')}
+              placeholder="Или выберите ниже..." className={inputCls} style={inputStyle} />
+            <Chips suggestions={HEREDITARY_SUGGESTIONS} value={form.hereditary} onChange={setVal('hereditary')} />
           </div>
+
+          {/* Курение — кнопки вместо select */}
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={labelStyle}>Курение</label>
-            <select value={form.smoking} onChange={set('smoking')} className={inputCls} style={inputStyle}>
-              <option value="no">Не курю</option>
-              <option value="yes">Курю</option>
-              <option value="quit">Бросил(а)</option>
-            </select>
+            <label className="block text-xs font-medium mb-2" style={labelStyle}>Курение</label>
+            <div className="flex gap-2">
+              {SMOKING_OPTIONS.map(({ value, label }) => {
+                const active = form.smoking === value;
+                return (
+                  <button key={value} type="button"
+                    onClick={() => setForm(f => ({ ...f, smoking: value }))}
+                    className="flex-1 py-2.5 rounded-2xl text-sm font-medium transition"
+                    style={{
+                      background: active ? 'var(--s-blue)' : 'var(--s-bg)',
+                      color: active ? '#fff' : 'var(--s-secondary)',
+                      border: active ? '1px solid var(--s-blue)' : '1px solid var(--s-separator)',
+                    }}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
