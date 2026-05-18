@@ -10,72 +10,69 @@ export default function DashboardPage() {
   const [user, setUser] = useState<TelegramUser | null>(null);
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) {
-      router.push('/auth');
-      return;
-    }
+    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     setUser(auth.getUser());
   }, [router]);
 
   if (!user) return null;
 
-  const cards = [
-    { icon: '🩺', title: 'Новая консультация', desc: 'Опишите симптомы', href: '/consultation', color: 'bg-blue-600 text-white' },
-    { icon: '📋', title: 'История', desc: 'Прошлые консультации', href: '/history', color: 'bg-white border-2 border-gray-200 text-gray-900' },
-    { icon: '👤', title: 'Профиль', desc: 'Личные данные', href: '/profile', color: 'bg-white border-2 border-gray-200 text-gray-900' },
-  ];
-
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen" style={{ background: 'var(--apple-bg)' }}>
+
       {/* Header */}
-      <header className="bg-white border-b px-6 py-4">
+      <header className="px-6 py-4" style={{ background: 'rgba(245,245,247,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--apple-separator)' }}>
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🩺</span>
-            <span className="font-bold text-gray-900">СимптоМед</span>
-          </div>
+          <span className="font-semibold" style={{ color: 'var(--apple-label)' }}>СимптоМед</span>
           <div className="flex items-center gap-3">
-            {user.photo_url && (
-              <img src={user.photo_url} alt="" className="w-8 h-8 rounded-full" />
-            )}
-            <span className="text-sm text-gray-600">{user.first_name}</span>
-            <button
-              onClick={auth.logout}
-              className="text-sm text-gray-400 hover:text-gray-600"
-            >
-              Выйти
-            </button>
+            {user.photo_url && <img src={user.photo_url} alt="" className="w-7 h-7 rounded-full" />}
+            <span className="text-sm" style={{ color: 'var(--apple-secondary)' }}>{user.first_name}</span>
+            <button onClick={auth.logout} className="text-sm" style={{ color: 'var(--apple-blue)' }}>Выйти</button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Добрый день, {user.first_name}
-        </h1>
-        <p className="text-gray-500 mb-8">Чем могу помочь?</p>
+      <div className="max-w-2xl mx-auto px-6 py-10">
 
-        <div className="flex flex-col gap-4">
-          {cards.map(({ icon, title, desc, href, color }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`${color} rounded-2xl p-6 flex items-center gap-4 hover:opacity-90 transition shadow-sm`}
-            >
-              <span className="text-3xl">{icon}</span>
+        <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--apple-label)' }}>
+          Привет, {user.first_name} 👋
+        </h1>
+        <p className="mb-10 text-base" style={{ color: 'var(--apple-secondary)' }}>Чем могу помочь сегодня?</p>
+
+        {/* Primary action */}
+        <Link href="/consultation"
+          className="flex items-center gap-5 p-6 rounded-3xl mb-4 transition hover:opacity-95"
+          style={{ background: 'var(--apple-blue)' }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.2)' }}>
+            <span className="text-2xl">🩺</span>
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-lg text-white">Новая консультация</div>
+            <div className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>Опишите симптомы и получите рекомендацию</div>
+          </div>
+          <span className="text-2xl text-white opacity-50">→</span>
+        </Link>
+
+        {/* Secondary actions */}
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { icon: '📋', title: 'История', desc: 'Прошлые консультации', href: '/history' },
+            { icon: '👤', title: 'Профиль', desc: 'Личные данные', href: '/profile' },
+          ].map(({ icon, title, desc, href }) => (
+            <Link key={href} href={href}
+              className="flex flex-col gap-3 p-5 rounded-3xl transition hover:opacity-95"
+              style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+              <span className="text-2xl">{icon}</span>
               <div>
-                <div className="font-semibold text-lg">{title}</div>
-                <div className={`text-sm ${color.includes('blue-600') ? 'text-blue-100' : 'text-gray-500'}`}>
-                  {desc}
-                </div>
+                <div className="font-semibold text-sm" style={{ color: 'var(--apple-label)' }}>{title}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--apple-secondary)' }}>{desc}</div>
               </div>
-              <span className="ml-auto text-2xl opacity-50">→</span>
             </Link>
           ))}
         </div>
 
-        <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-          ⚠️ СимптоМед не заменяет консультацию врача. При острых симптомах вызовите скорую.
+        <div className="mt-6 p-4 rounded-2xl text-sm" style={{ background: '#FFF8EC', color: '#7A4800', border: '1px solid #FFD9A0' }}>
+          ⚠️ СимптоМед не заменяет врача. При острых симптомах вызовите скорую: <strong>103</strong>
         </div>
       </div>
     </main>

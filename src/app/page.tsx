@@ -2,123 +2,97 @@ import Link from 'next/link';
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🩺</span>
-          <span className="font-bold text-xl text-gray-900">СимптоМед</span>
+    <main className="min-h-screen" style={{ background: 'var(--apple-bg)' }}>
+
+      {/* Nav */}
+      <nav style={{ background: 'rgba(245,245,247,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--apple-separator)' }}
+        className="sticky top-0 z-50 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <span className="text-lg font-semibold" style={{ color: 'var(--apple-label)' }}>
+            СимптоМед
+          </span>
+          <div className="flex items-center gap-3">
+            <Link href="/auth"
+              className="text-sm font-medium px-4 py-2 rounded-full transition"
+              style={{ color: 'var(--apple-blue)' }}>
+              Войти
+            </Link>
+            <Link href="/consultation"
+              className="text-sm font-medium px-5 py-2 rounded-full text-white transition"
+              style={{ background: 'var(--apple-blue)' }}>
+              Начать
+            </Link>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <a
-            href="https://t.me/medgg_bot"
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Открыть в Telegram
-          </a>
-          <Link
-            href="/auth"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-          >
-            Войти
-          </Link>
-        </div>
-      </header>
+      </nav>
 
       {/* Hero */}
-      <section className="text-center px-6 py-20 max-w-3xl mx-auto">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
-          Опишите симптомы —<br />
-          <span className="text-blue-600">получите рекомендацию</span>
-        </h1>
-        <p className="text-xl text-gray-600 mb-10">
-          СимптоМед помогает понять к какому врачу обратиться.
-          Быстро, точно и без очередей.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/auth"
-            className="bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 transition shadow-lg"
-          >
-            Начать бесплатно
-          </Link>
-          <a
-            href="https://t.me/medgg_bot"
-            className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-50 transition"
-          >
-            Открыть в Telegram
-          </a>
+      <section className="px-6 pt-24 pb-20 text-center">
+        <div className="max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8"
+            style={{ background: 'var(--apple-blue-light)', color: 'var(--apple-blue)' }}>
+            🩺 Медицинский ИИ-помощник
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6"
+            style={{ color: 'var(--apple-label)', lineHeight: 1.1 }}>
+            Опишите симптомы.<br />
+            <span style={{ color: 'var(--apple-blue)' }}>Получите ответ.</span>
+          </h1>
+          <p className="text-xl mb-10 max-w-xl mx-auto"
+            style={{ color: 'var(--apple-secondary)', lineHeight: 1.6 }}>
+            СимптоМед анализирует симптомы и подсказывает к какому специалисту обратиться.
+            Быстро, точно, бесплатно.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/consultation"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-white text-lg font-semibold transition hover:opacity-90"
+              style={{ background: 'var(--apple-blue)' }}>
+              Начать консультацию
+            </Link>
+            <Link href="/auth"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-lg font-semibold transition"
+              style={{ background: 'var(--apple-surface)', color: 'var(--apple-label)', border: '1px solid var(--apple-separator)' }}>
+              Войти через Telegram
+            </Link>
+          </div>
         </div>
-        <p className="text-sm text-gray-400 mt-4">
-          Вход через Telegram — без паролей
-        </p>
       </section>
 
-      {/* How it works */}
-      <section className="px-6 py-16 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-          Как это работает
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* Features */}
+      <section className="px-6 pb-24">
+        <div className="max-w-5xl mx-auto grid sm:grid-cols-3 gap-4">
           {[
-            { step: '1', icon: '💬', title: 'Опишите симптомы', desc: 'Напишите что вас беспокоит — боль, температура, недомогание' },
-            { step: '2', icon: '🔍', title: 'Ответьте на вопросы', desc: 'Уточняющие вопросы помогут точнее определить проблему' },
-            { step: '3', icon: '👨‍⚕️', title: 'Получите рекомендацию', desc: 'Узнайте к какому специалисту обратиться и почему' },
-          ].map(({ step, icon, title, desc }) => (
-            <div key={step} className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                {icon}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-              <p className="text-gray-600">{desc}</p>
+            { icon: '⚡️', title: 'За 2 минуты', desc: 'Введите симптомы и сразу получите рекомендацию специалиста' },
+            { icon: '🧠', title: 'ИИ-анализ', desc: 'Система учитывает историю болезней, анамнез и актуальные данные' },
+            { icon: '🔒', title: 'Приватно', desc: 'Данные хранятся в зашифрованной базе и не передаются третьим лицам' },
+          ].map(({ icon, title, desc }) => (
+            <div key={title} className="rounded-3xl p-8"
+              style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+              <div className="text-3xl mb-4">{icon}</div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--apple-label)' }}>{title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--apple-secondary)' }}>{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features */}
-      <section className="bg-white px-6 py-16">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Возможности
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { icon: '🩺', title: 'Умная диагностика', desc: 'Анализ симптомов с учётом вашего возраста, пола и истории болезней' },
-              { icon: '📋', title: 'Медицинская история', desc: 'Хронические заболевания и аллергии учитываются при каждой консультации' },
-              { icon: '📊', title: 'История консультаций', desc: 'Все рекомендации сохраняются и доступны в любой момент' },
-              { icon: '🔒', title: 'Безопасность', desc: 'Авторизация через Telegram, данные хранятся в зашифрованной базе' },
-            ].map(({ icon, title, desc }) => (
-              <div key={title} className="flex gap-4 p-6 bg-gray-50 rounded-xl">
-                <span className="text-3xl flex-shrink-0">{icon}</span>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
-                  <p className="text-gray-600 text-sm">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* CTA */}
+      <section className="px-6 pb-24">
+        <div className="max-w-2xl mx-auto text-center rounded-3xl p-12"
+          style={{ background: 'var(--apple-label)' }}>
+          <h2 className="text-3xl font-bold text-white mb-4">Попробуйте прямо сейчас</h2>
+          <p className="mb-8" style={{ color: '#86868B' }}>Без регистрации — просто опишите как вы себя чувствуете</p>
+          <Link href="/consultation"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-lg font-semibold transition hover:opacity-90"
+            style={{ background: 'var(--apple-blue)', color: '#fff' }}>
+            Начать бесплатно →
+          </Link>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="text-center px-6 py-20">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Готовы начать?
-        </h2>
-        <p className="text-gray-600 mb-8">Это бесплатно и занимает 2 минуты</p>
-        <Link
-          href="/auth"
-          className="bg-blue-600 text-white px-10 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 transition shadow-lg inline-block"
-        >
-          Войти через Telegram
-        </Link>
-      </section>
-
       {/* Footer */}
-      <footer className="border-t px-6 py-8 text-center text-sm text-gray-400">
-        <p>© 2026 СимптоМед · symed.uz</p>
-        <p className="mt-1">Не является заменой консультации врача</p>
+      <footer className="px-6 py-8 text-center text-sm" style={{ color: 'var(--apple-tertiary)', borderTop: '1px solid var(--apple-separator)' }}>
+        © 2026 СимптоМед · symed.uz · Не является заменой консультации врача
       </footer>
     </main>
   );

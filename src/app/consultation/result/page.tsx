@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { useConsultation } from '@/context/ConsultationContext';
 
-const URGENCY_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-  high:   { color: 'bg-red-50 border-red-300 text-red-800',              label: 'Срочно',              icon: '🚨' },
-  medium: { color: 'bg-yellow-50 border-yellow-300 text-yellow-800',     label: 'В ближайшее время',   icon: '⚠️' },
-  low:    { color: 'bg-green-50 border-green-300 text-green-800',        label: 'Планово',             icon: '✅' },
+const URGENCY: Record<string, { bg: string; text: string; label: string; icon: string }> = {
+  high:   { bg: '#FFF2F2', text: '#C00',    label: 'Срочно',              icon: '🚨' },
+  medium: { bg: '#FFFAEC', text: '#7A4800', label: 'В ближайшее время',   icon: '⚠️' },
+  low:    { bg: '#F0FFF4', text: '#166534', label: 'Планово',             icon: '✅' },
 };
 
 export default function ResultPage() {
@@ -25,140 +25,128 @@ export default function ResultPage() {
 
   if (!result) return null;
 
-  const urgency = URGENCY_CONFIG[result.urgency] || URGENCY_CONFIG.medium;
+  const u = URGENCY[result.urgency] || URGENCY.medium;
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <span className="font-semibold text-gray-900">Результат консультации</span>
+    <main className="min-h-screen pb-12" style={{ background: 'var(--apple-bg)' }}>
+      <header className="px-6 py-4 sticky top-0 z-10" style={{ background: 'rgba(245,245,247,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--apple-separator)' }}>
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <span className="font-semibold" style={{ color: 'var(--apple-label)' }}>Результат</span>
           {isLoggedIn && (
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="ml-auto text-sm text-gray-400 hover:text-gray-600"
-            >
-              Личный кабинет
+            <button onClick={() => router.push('/dashboard')} className="text-sm" style={{ color: 'var(--apple-blue)' }}>
+              Кабинет
             </button>
           )}
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-5">
+      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-4">
 
-        {/* Urgency badge */}
-        <div className={`border rounded-xl p-4 flex items-center gap-3 ${urgency.color}`}>
-          <span className="text-2xl">{urgency.icon}</span>
+        {/* Urgency */}
+        <div className="flex items-center gap-3 px-5 py-4 rounded-2xl"
+          style={{ background: u.bg, border: `1px solid ${u.text}30` }}>
+          <span className="text-2xl">{u.icon}</span>
           <div>
-            <div className="font-semibold">{urgency.label}</div>
-            <div className="text-sm opacity-80">Рекомендуем обратиться к врачу</div>
+            <div className="font-semibold" style={{ color: u.text }}>{u.label}</div>
+            <div className="text-sm" style={{ color: u.text, opacity: 0.7 }}>Рекомендуем обратиться к врачу</div>
           </div>
         </div>
 
         {/* Recommendation */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="font-bold text-gray-900 mb-3">📋 Рекомендация</h2>
-          <p className="text-gray-700 leading-relaxed">{result.recommendation}</p>
+        <div className="rounded-3xl p-6" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+          <h2 className="font-semibold mb-3" style={{ color: 'var(--apple-label)' }}>📋 Рекомендация</h2>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--apple-secondary)' }}>{result.recommendation}</p>
         </div>
 
         {/* Specialists */}
         {result.specialists?.length > 0 && (
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="font-bold text-gray-900 mb-4">👨‍⚕️ Специалисты</h2>
-            <div className="flex flex-col gap-3">
+          <div className="rounded-3xl p-6" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+            <h2 className="font-semibold mb-5" style={{ color: 'var(--apple-label)' }}>👨‍⚕️ Специалисты</h2>
+            <div className="flex flex-col gap-4">
               {result.specialists.map((spec, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="text-lg">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-gray-900">{spec.name}</span>
-                      <span className="text-sm font-medium text-blue-600">{spec.percentage}%</span>
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-lg flex-shrink-0">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-medium text-sm" style={{ color: 'var(--apple-label)' }}>{spec.name}</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--apple-blue)' }}>{spec.percentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${spec.percentage}%` }} />
+                    <div className="h-1.5 rounded-full" style={{ background: 'var(--apple-bg)' }}>
+                      <div className="h-1.5 rounded-full" style={{ width: `${spec.percentage}%`, background: 'var(--apple-blue)' }} />
                     </div>
-                    {spec.description && (
-                      <p className="text-sm text-gray-500">{spec.description}</p>
-                    )}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Записаться к врачу — требует авторизацию */}
-            {isLoggedIn ? (
-              <div className="mt-5">
-                <button
-                  onClick={() => setComingSoon(true)}
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
-                >
-                  📅 Записаться к врачу
-                </button>
-                {comingSoon && (
-                  <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-sm text-yellow-800 text-center">
-                    🔧 Функция в разработке — скоро появится!
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="mt-5 bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                <p className="text-sm text-blue-700 mb-3">
-                  Чтобы записаться к врачу, войдите через Telegram
-                </p>
-                <Link
-                  href="/auth"
-                  className="inline-block bg-blue-600 text-white px-6 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition"
-                >
-                  Войти и записаться
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Disclaimer */}
-        <div className="bg-gray-100 rounded-xl p-4 text-sm text-gray-600">
-          ⚠️ Это предварительная оценка, не диагноз. Обратитесь к врачу для точного обследования.
-        </div>
-
-        {/* Feedback */}
-        {!feedback ? (
-          <div className="bg-white rounded-xl p-5 shadow-sm text-center">
-            <p className="text-gray-600 mb-4">Была ли рекомендация полезной?</p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => setFeedback('good')}
-                className="flex items-center gap-2 px-6 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl font-medium hover:bg-green-100 transition"
-              >
-                👍 Да, помогло
-              </button>
-              <button
-                onClick={() => setFeedback('bad')}
-                className="flex items-center gap-2 px-6 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl font-medium hover:bg-red-100 transition"
-              >
-                👎 Не помогло
-              </button>
+            {/* Записаться */}
+            <div className="mt-5">
+              {isLoggedIn ? (
+                <>
+                  <button onClick={() => setComingSoon(true)}
+                    className="w-full py-3.5 rounded-full font-semibold text-white text-sm transition hover:opacity-90"
+                    style={{ background: 'var(--apple-green)' }}>
+                    📅 Записаться к врачу
+                  </button>
+                  {comingSoon && (
+                    <p className="text-xs text-center mt-2" style={{ color: 'var(--apple-tertiary)' }}>
+                      🔧 Функция в разработке — скоро появится!
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="p-4 rounded-2xl text-center" style={{ background: 'var(--apple-blue-light)' }}>
+                  <p className="text-sm mb-3" style={{ color: 'var(--apple-blue)' }}>
+                    Войдите чтобы записаться к врачу
+                  </p>
+                  <Link href="/auth"
+                    className="inline-block px-6 py-2.5 rounded-full text-sm font-semibold text-white"
+                    style={{ background: 'var(--apple-blue)' }}>
+                    Войти и записаться
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-xl p-5 shadow-sm text-center">
-            <p className="text-gray-600">
-              {feedback === 'good' ? '👍 Спасибо! Рады помочь.' : '👎 Жаль. Попробуйте описать симптомы подробнее.'}
-            </p>
-          </div>
         )}
 
+        {/* Feedback */}
+        <div className="rounded-3xl p-5 text-center" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+          {!feedback ? (
+            <>
+              <p className="text-sm mb-4" style={{ color: 'var(--apple-secondary)' }}>Была ли рекомендация полезной?</p>
+              <div className="flex gap-2 justify-center">
+                {[['good','👍 Помогло','#F0FFF4','#166534'],['bad','👎 Не помогло','#FFF2F2','#C00']].map(([key,label,bg,color]) => (
+                  <button key={key} onClick={() => setFeedback(key as 'good'|'bad')}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition"
+                    style={{ background: bg as string, color: color as string, border: `1px solid ${color}30` }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--apple-secondary)' }}>
+              {feedback === 'good' ? '👍 Спасибо! Рады помочь.' : '👎 Жаль. Попробуйте описать симптомы подробнее.'}
+            </p>
+          )}
+        </div>
+
+        {/* Disclaimer */}
+        <p className="text-xs text-center px-4" style={{ color: 'var(--apple-tertiary)' }}>
+          ⚠️ Это предварительная оценка, не диагноз. Обратитесь к врачу для точного обследования.
+        </p>
+
         {/* Actions */}
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/consultation"
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-center hover:bg-blue-700 transition"
-          >
+        <div className="flex flex-col gap-2 mt-2">
+          <Link href="/consultation"
+            className="w-full py-4 rounded-full font-semibold text-center text-white"
+            style={{ background: 'var(--apple-blue)' }}>
             Новая консультация
           </Link>
-          <Link
-            href={isLoggedIn ? '/dashboard' : '/'}
-            className="w-full bg-white border-2 border-gray-200 text-gray-700 py-4 rounded-xl font-semibold text-center hover:bg-gray-50 transition"
-          >
+          <Link href={isLoggedIn ? '/dashboard' : '/'}
+            className="w-full py-4 rounded-full font-semibold text-center"
+            style={{ background: 'var(--apple-surface)', color: 'var(--apple-label)', border: '1px solid var(--apple-separator)' }}>
             На главную
           </Link>
         </div>

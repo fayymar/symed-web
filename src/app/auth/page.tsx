@@ -14,98 +14,48 @@ type Status = 'idle' | 'waiting' | 'success' | 'error';
 export default function AuthPage() {
   const router = useRouter();
   const [code, setCode] = useState('');
-  const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
+  const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const codeRef = useRef('');
 
   useEffect(() => {
-    if (auth.isLoggedIn()) {
-      router.push('/dashboard');
-      return;
-    }
-
-    // Генерируем код и регистрируем на бэкенде
+    if (auth.isLoggedIn()) { router.push('/dashboard'); return; }
     const newCode = generateCode();
     setCode(newCode);
     codeRef.current = newCode;
-
     api.requestAuthCode(newCode)
       .then(() => setStatus('waiting'))
-      .catch(() => setErrorMsg('Не удалось связаться с сервером. Попробуйте обновить страницу.'));
-
-    const copyCode = () => {
-    if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+      .catch(() => setErrorMsg('Не удалось связаться с сервером. Обновите страницу.'));
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router]);
 
-  // Запускаем polling когда статус стал waiting
   useEffect(() => {
     if (status !== 'waiting') return;
-
     pollRef.current = setInterval(async () => {
       try {
         const data = await api.checkAuthStatus(codeRef.current);
         if (data.verified) {
           clearInterval(pollRef.current!);
           const user: TelegramUser = {
-            id: data.id,
-            first_name: data.first_name || '',
-            last_name: data.last_name,
-            username: data.username,
-            photo_url: data.photo_url,
-            auth_date: data.auth_date,
-            hash: '',
+            id: data.id, first_name: data.first_name || '',
+            last_name: data.last_name, username: data.username,
+            photo_url: data.photo_url, auth_date: data.auth_date, hash: '',
           };
           auth.setUser(user);
           setStatus('success');
           setTimeout(() => router.push('/dashboard'), 800);
         }
-      } catch {
-        // Тихо игнорируем сетевые ошибки, продолжаем polling
-      }
+      } catch {}
     }, 2000);
-
-    // Таймаут 10 минут
     const timeout = setTimeout(() => {
       clearInterval(pollRef.current!);
       setStatus('error');
-      setErrorMsg('Время ожидания истекло. Обновите страницу и попробуйте снова.');
+      setErrorMsg('Время ожидания истекло. Обновите страницу.');
     }, 600_000);
-
-    const copyCode = () => {
-    if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return () => {
-      clearInterval(pollRef.current!);
-      clearTimeout(timeout);
-    };
+    return () => { clearInterval(pollRef.current!); clearTimeout(timeout); };
   }, [status, router]);
-
-  const handleRetry = () => {
-    const newCode = generateCode();
-    setCode(newCode);
-    codeRef.current = newCode;
-    setErrorMsg('');
-    setStatus('idle');
-    api.requestAuthCode(newCode)
-      .then(() => setStatus('waiting'))
-      .catch(() => setErrorMsg('Ошибка сервера. Попробуйте позже.'));
-  };
 
   const copyCode = () => {
     if (!code) return;
@@ -115,94 +65,88 @@ export default function AuthPage() {
     });
   };
 
+  const handleRetry = () => {
+    const newCode = generateCode();
+    setCode(newCode); codeRef.current = newCode;
+    setErrorMsg(''); setStatus('idle');
+    api.requestAuthCode(newCode).then(() => setStatus('waiting')).catch(() => setErrorMsg('Ошибка сервера.'));
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-6">
-      <div className="bg-white rounded-2xl shadow-xl p-10 max-w-md w-full text-center">
-        <span className="text-5xl mb-6 block">🩺</span>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Войти в СимптоМед</h1>
-        <p className="text-gray-500 mb-8">
-          Войдите через Telegram — без паролей
-        </p>
+    <main className="min-h-screen flex items-center justify-center px-6 py-12" style={{ background: 'var(--apple-bg)' }}>
+      <div className="w-full max-w-sm">
+
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            style={{ background: 'var(--apple-blue)' }}>
+            <span className="text-3xl">🩺</span>
+          </div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--apple-label)' }}>СимптоМед</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--apple-secondary)' }}>Войдите через Telegram</p>
+        </div>
 
         {status === 'success' ? (
-          <div className="py-6">
+          <div className="text-center py-8">
             <div className="text-5xl mb-4">✅</div>
-            <p className="text-green-700 font-semibold text-lg">Вход выполнен!</p>
-            <p className="text-gray-400 text-sm mt-1">Перенаправляем...</p>
+            <p className="font-semibold" style={{ color: 'var(--apple-label)' }}>Вход выполнен</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--apple-secondary)' }}>Перенаправляем...</p>
           </div>
         ) : (
-          <>
-            {/* Инструкция */}
-            <div className="bg-blue-50 rounded-xl p-5 mb-6 text-left">
-              <p className="text-sm font-semibold text-blue-800 mb-3">Как войти:</p>
-              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
-                <li>Откройте <span className="font-semibold">@medgg_bot</span> в Telegram</li>
-                <li>Отправьте боту этот код:</li>
-              </ol>
-            </div>
+          <div className="rounded-3xl p-8" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
 
-            {/* Код */}
-            <div className="relative bg-gray-900 rounded-xl py-5 px-8 mb-6 w-full flex items-center justify-center">
-              <span className="text-4xl font-mono font-bold tracking-[0.3em] text-white">
+            <p className="text-sm font-medium mb-5" style={{ color: 'var(--apple-label)' }}>
+              Как войти:
+            </p>
+            <ol className="text-sm space-y-2 mb-6" style={{ color: 'var(--apple-secondary)' }}>
+              <li className="flex gap-2"><span style={{ color: 'var(--apple-blue)', fontWeight: 600 }}>1.</span> Откройте <strong style={{ color: 'var(--apple-label)' }}>@medgg_bot</strong> в Telegram</li>
+              <li className="flex gap-2"><span style={{ color: 'var(--apple-blue)', fontWeight: 600 }}>2.</span> Введите этот код боту:</li>
+            </ol>
+
+            {/* Code block */}
+            <div className="relative rounded-2xl py-5 px-4 mb-5 flex items-center justify-center"
+              style={{ background: 'var(--apple-bg)' }}>
+              <span className="text-4xl font-mono font-bold tracking-[0.25em]"
+                style={{ color: 'var(--apple-label)' }}>
                 {code || '------'}
               </span>
-              <button
-                onClick={copyCode}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded-lg transition"
-              >
-                {copied ? '✅ Скопировано' : '📋 Копировать'}
+              <button onClick={copyCode}
+                className="absolute right-3 text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                style={{ background: copied ? 'var(--apple-green)' : 'var(--apple-separator)', color: copied ? '#fff' : 'var(--apple-label)' }}>
+                {copied ? '✓ Скопировано' : 'Копировать'}
               </button>
             </div>
 
-            {/* Кнопка открыть бот */}
-            <a
-              href={`https://t.me/medgg_bot`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-4 rounded-xl font-semibold text-base hover:bg-blue-600 transition mb-4"
-            >
-              <span>Открыть @medgg_bot</span>
-              <span>→</span>
+            <a href="https://t.me/medgg_bot" target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm text-white transition hover:opacity-90 mb-4"
+              style={{ background: 'var(--apple-blue)' }}>
+              Открыть @medgg_bot →
             </a>
 
-            {/* Статус */}
             {status === 'waiting' && !errorMsg && (
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mt-2">
-                <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+              <div className="flex items-center justify-center gap-2 text-xs" style={{ color: 'var(--apple-tertiary)' }}>
+                <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--apple-blue)' }} />
                 Ожидаем подтверждения...
               </div>
             )}
 
             {errorMsg && (
-              <div className="mt-4 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 border border-red-200">
+              <div className="mt-3 text-xs text-center p-3 rounded-xl" style={{ background: '#FFF2F2', color: 'var(--apple-red)' }}>
                 {errorMsg}
-                <button
-                  onClick={handleRetry}
-                  className="block mt-2 text-red-700 font-semibold underline"
-                >
-                  Получить новый код
-                </button>
+                <button onClick={handleRetry} className="block mx-auto mt-1 font-semibold underline">Получить новый код</button>
               </div>
             )}
 
-            <p className="text-xs text-gray-400 mt-6">
-              Код действителен 10 минут
-            </p>
-          </>
+            <p className="text-xs text-center mt-4" style={{ color: 'var(--apple-tertiary)' }}>Код действителен 10 минут</p>
+          </div>
         )}
 
-        {/* Или продолжить без входа */}
-        <div className="mt-8 pt-6 border-t">
-          <p className="text-sm text-gray-400 mb-3">
-            Или{' '}
-            <button
-              onClick={() => router.push('/consultation')}
-              className="text-blue-500 hover:underline font-medium"
-            >
-              получить консультацию без входа
-            </button>
-          </p>
-        </div>
+        <p className="text-center text-sm mt-6" style={{ color: 'var(--apple-secondary)' }}>
+          <button onClick={() => router.push('/consultation')}
+            className="font-medium" style={{ color: 'var(--apple-blue)' }}>
+            Консультация без входа →
+          </button>
+        </p>
       </div>
     </main>
   );

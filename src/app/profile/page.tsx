@@ -6,16 +6,9 @@ import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 interface ProfileForm {
-  full_name: string;
-  phone: string;
-  birthdate: string;
-  gender: string;
-  height: string;
-  weight: string;
-  chronic_diseases: string;
-  drug_allergies: string;
-  smoking: string;
-  hereditary: string;
+  full_name: string; phone: string; birthdate: string; gender: string;
+  height: string; weight: string; chronic_diseases: string;
+  drug_allergies: string; smoking: string; hereditary: string;
 }
 
 const empty: ProfileForm = {
@@ -35,115 +28,96 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     const user = auth.getUser()!;
-
     api.getProfile(user.id).then((data) => {
       if (data.exists && data.profile) {
         const p = data.profile;
         setForm({
-          full_name: p.full_name || '',
-          phone: p.phone || '',
+          full_name: p.full_name || '', phone: p.phone || '',
           birthdate: p.birthdate ? p.birthdate.slice(0, 10) : '',
           gender: p.gender || '',
           height: p.height ? String(p.height) : '',
           weight: p.weight ? String(p.weight) : '',
           chronic_diseases: Array.isArray(p.chronic_diseases) ? p.chronic_diseases.join(', ') : (p.chronic_diseases || ''),
-          drug_allergies: p.drug_allergies || '',
-          smoking: p.smoking || 'no',
+          drug_allergies: p.drug_allergies || '', smoking: p.smoking || 'no',
           hereditary: Array.isArray(p.hereditary) ? p.hereditary.join(', ') : (p.hereditary || ''),
         });
       }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [router]);
 
-  const set = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+  const set = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [key]: e.target.value }));
 
   const handleSave = async () => {
     if (!form.full_name.trim()) { setError('Укажите имя'); return; }
-    setError('');
-    setSaving(true);
+    setError(''); setSaving(true);
     try {
       const user = auth.getUser()!;
-      const payload = {
+      await api.saveProfile(user.id, {
         ...form,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
         chronic_diseases: form.chronic_diseases ? form.chronic_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
         hereditary: form.hereditary ? form.hereditary.split(',').map(s => s.trim()).filter(Boolean) : [],
-      };
-      await api.saveProfile(user.id, payload);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setError('Ошибка сохранения. Попробуйте ещё раз.');
-    } finally {
-      setSaving(false);
-    }
+      });
+      setSaved(true); setTimeout(() => setSaved(false), 3000);
+    } catch { setError('Ошибка сохранения.'); }
+    finally { setSaving(false); }
   };
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-5xl mb-4 animate-pulse">👤</div>
-          <p className="text-gray-500">Загружаем профиль...</p>
-        </div>
-      </main>
-    );
-  }
+  const inputCls = "w-full px-4 py-3 rounded-2xl text-sm focus:outline-none transition";
+  const inputStyle = { background: 'var(--apple-bg)', color: 'var(--apple-label)', border: '1px solid var(--apple-separator)' };
+  const focusStyle = { outline: `2px solid var(--apple-blue)` };
+  const labelCls = "block text-xs font-medium mb-1.5";
 
-  const inputCls = "w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none bg-white";
-  const labelCls = "block text-sm font-medium text-gray-700 mb-1";
+  if (loading) return (
+    <main className="min-h-screen flex items-center justify-center" style={{ background: 'var(--apple-bg)' }}>
+      <div className="text-center">
+        <div className="text-5xl mb-4 animate-pulse">👤</div>
+        <p style={{ color: 'var(--apple-secondary)' }}>Загружаем профиль...</p>
+      </div>
+    </main>
+  );
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 sticky top-0 z-10">
+    <main className="min-h-screen pb-12" style={{ background: 'var(--apple-bg)' }}>
+      <header className="px-6 py-4 sticky top-0 z-10" style={{ background: 'rgba(245,245,247,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--apple-separator)' }}>
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')} className="text-gray-400 hover:text-gray-600 text-2xl">←</button>
-          <span className="font-semibold text-gray-900">Мой профиль</span>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="ml-auto bg-blue-600 text-white px-5 py-2 rounded-xl font-medium text-sm hover:bg-blue-700 transition disabled:opacity-50"
-          >
+          <button onClick={() => router.push('/dashboard')}
+            className="w-8 h-8 flex items-center justify-center rounded-full"
+            style={{ background: 'var(--apple-separator)', color: 'var(--apple-label)' }}>←</button>
+          <span className="font-semibold" style={{ color: 'var(--apple-label)' }}>Мой профиль</span>
+          <button onClick={handleSave} disabled={saving}
+            className="ml-auto text-sm font-semibold px-4 py-1.5 rounded-full text-white disabled:opacity-40"
+            style={{ background: 'var(--apple-blue)' }}>
             {saving ? 'Сохраняем...' : 'Сохранить'}
           </button>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-6">
-
-        {saved && (
-          <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm font-medium text-center">
-            ✅ Профиль сохранён
-          </div>
-        )}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm text-center">
-            {error}
-          </div>
-        )}
+      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-5">
+        {saved && <div className="px-4 py-3 rounded-2xl text-sm text-center font-medium" style={{ background: '#F0FFF4', color: '#166534', border: '1px solid #BBF7D0' }}>✅ Профиль сохранён</div>}
+        {error && <div className="px-4 py-3 rounded-2xl text-sm text-center" style={{ background: '#FFF2F2', color: 'var(--apple-red)' }}>{error}</div>}
 
         {/* Основное */}
-        <section className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-          <h2 className="font-bold text-gray-900">👤 Основное</h2>
-
+        <section className="rounded-3xl p-6 flex flex-col gap-4" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+          <h2 className="font-semibold" style={{ color: 'var(--apple-label)' }}>👤 Основное</h2>
           <div>
-            <label className={labelCls}>Полное имя *</label>
-            <input value={form.full_name} onChange={set('full_name')} placeholder="Иванов Иван Иванович" className={inputCls} />
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Полное имя *</label>
+            <input value={form.full_name} onChange={set('full_name')} placeholder="Иванов Иван Иванович" className={inputCls} style={inputStyle} />
           </div>
           <div>
-            <label className={labelCls}>Телефон</label>
-            <input value={form.phone} onChange={set('phone')} placeholder="+998 90 000 00 00" className={inputCls} />
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Телефон</label>
+            <input value={form.phone} onChange={set('phone')} placeholder="+998 90 000 00 00" className={inputCls} style={inputStyle} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Дата рождения</label>
-              <input type="date" value={form.birthdate} onChange={set('birthdate')} className={inputCls} />
+              <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Дата рождения</label>
+              <input type="date" value={form.birthdate} onChange={set('birthdate')} className={inputCls} style={inputStyle} />
             </div>
             <div>
-              <label className={labelCls}>Пол</label>
-              <select value={form.gender} onChange={set('gender')} className={inputCls}>
+              <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Пол</label>
+              <select value={form.gender} onChange={set('gender')} className={inputCls} style={inputStyle}>
                 <option value="">Не указан</option>
                 <option value="male">Мужской</option>
                 <option value="female">Женский</option>
@@ -152,35 +126,34 @@ export default function ProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Рост (см)</label>
-              <input type="number" value={form.height} onChange={set('height')} placeholder="175" className={inputCls} />
+              <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Рост (см)</label>
+              <input type="number" value={form.height} onChange={set('height')} placeholder="175" className={inputCls} style={inputStyle} />
             </div>
             <div>
-              <label className={labelCls}>Вес (кг)</label>
-              <input type="number" value={form.weight} onChange={set('weight')} placeholder="70" className={inputCls} />
+              <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Вес (кг)</label>
+              <input type="number" value={form.weight} onChange={set('weight')} placeholder="70" className={inputCls} style={inputStyle} />
             </div>
           </div>
         </section>
 
         {/* Медицинская история */}
-        <section className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-          <h2 className="font-bold text-gray-900">🏥 Медицинская история</h2>
-
+        <section className="rounded-3xl p-6 flex flex-col gap-4" style={{ background: 'var(--apple-surface)', border: '1px solid var(--apple-separator)' }}>
+          <h2 className="font-semibold" style={{ color: 'var(--apple-label)' }}>🏥 Медицинская история</h2>
           <div>
-            <label className={labelCls}>Хронические заболевания</label>
-            <input value={form.chronic_diseases} onChange={set('chronic_diseases')} placeholder="Диабет, гипертония (через запятую)" className={inputCls} />
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Хронические заболевания</label>
+            <input value={form.chronic_diseases} onChange={set('chronic_diseases')} placeholder="Диабет, гипертония (через запятую)" className={inputCls} style={inputStyle} />
           </div>
           <div>
-            <label className={labelCls}>Аллергии на лекарства</label>
-            <input value={form.drug_allergies} onChange={set('drug_allergies')} placeholder="Пенициллин, аспирин..." className={inputCls} />
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Аллергии на лекарства</label>
+            <input value={form.drug_allergies} onChange={set('drug_allergies')} placeholder="Пенициллин, аспирин..." className={inputCls} style={inputStyle} />
           </div>
           <div>
-            <label className={labelCls}>Наследственные заболевания</label>
-            <input value={form.hereditary} onChange={set('hereditary')} placeholder="Диабет, болезни сердца (через запятую)" className={inputCls} />
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Наследственные заболевания</label>
+            <input value={form.hereditary} onChange={set('hereditary')} placeholder="Диабет, болезни сердца (через запятую)" className={inputCls} style={inputStyle} />
           </div>
           <div>
-            <label className={labelCls}>Курение</label>
-            <select value={form.smoking} onChange={set('smoking')} className={inputCls}>
+            <label className={labelCls} style={{ color: 'var(--apple-secondary)' }}>Курение</label>
+            <select value={form.smoking} onChange={set('smoking')} className={inputCls} style={inputStyle}>
               <option value="no">Не курю</option>
               <option value="yes">Курю</option>
               <option value="quit">Бросил(а)</option>
@@ -188,11 +161,9 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition disabled:opacity-50"
-        >
+        <button onClick={handleSave} disabled={saving}
+          className="w-full py-4 rounded-full font-semibold text-white disabled:opacity-40"
+          style={{ background: 'var(--apple-blue)' }}>
           {saving ? 'Сохраняем...' : '💾 Сохранить профиль'}
         </button>
       </div>
