@@ -1,47 +1,73 @@
 @import "tailwindcss";
 
+/* ── Light mode ─────────────────────────────────── */
 :root {
-  /* Apple color palette */
-  --apple-blue:       #0071E3;
-  --apple-blue-hover: #0077ED;
-  --apple-blue-light: #E8F1FB;
-  --apple-bg:         #F5F5F7;
-  --apple-surface:    #FFFFFF;
-  --apple-label:      #1D1D1F;
-  --apple-secondary:  #6E6E73;
-  --apple-tertiary:   #86868B;
-  --apple-separator:  #D2D2D7;
-  --apple-red:        #FF3B30;
-  --apple-green:      #34C759;
-  --apple-yellow:     #FF9500;
+  --s-bg:              #F5F5F7;
+  --s-surface:         #FFFFFF;
+  --s-surface-2:       #F5F5F7;
+  --s-label:           #1D1D1F;
+  --s-label-2:         #3A3A3C;
+  --s-secondary:       #6E6E73;
+  --s-tertiary:        #8E8E93;
+  --s-separator:       #D2D2D7;
+  --s-fill-secondary:  #E5E5EA;
 
-  --background: #F5F5F7;
-  --foreground: #1D1D1F;
+  --s-blue:            #0071E3;
+  --s-blue-hover:      #0077ED;
+  --s-blue-light:      #E8F1FB;
+  --s-blue-dark:       #0A84FF;   /* iOS dark blue */
+
+  --s-red:             #FF3B30;
+  --s-green:           #34C759;
+  --s-orange:          #FF9500;
+
+  --s-nav-bg:          rgba(245,245,247,0.82);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+/* ── Dark mode ──────────────────────────────────── */
+[data-theme="dark"] {
+  --s-bg:              #000000;
+  --s-surface:         #1C1C1E;
+  --s-surface-2:       #2C2C2E;
+  --s-label:           #FFFFFF;
+  --s-label-2:         #EBEBF5;
+  --s-secondary:       #EBEBF599;
+  --s-tertiary:        #EBEBF54D;
+  --s-separator:       #38383A;
+  --s-fill-secondary:  #3A3A3C;
+
+  --s-blue:            #0A84FF;
+  --s-blue-hover:      #409CFF;
+  --s-blue-light:      #0A84FF1A;
+
+  --s-red:             #FF453A;
+  --s-green:           #30D158;
+  --s-orange:          #FF9F0A;
+
+  --s-nav-bg:          rgba(28,28,30,0.82);
 }
 
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ── Base ───────────────────────────────────────── */
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
+
+html { color-scheme: light; transition: background 0.2s; }
+[data-theme="dark"] { color-scheme: dark; }
 
 body {
-  background: var(--apple-bg);
-  color: var(--apple-label);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "Helvetica Neue", Inter, Arial, sans-serif;
+  background: var(--s-bg);
+  color: var(--s-label);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Inter, Arial, sans-serif;
+  min-height: 100vh;
 }
 
-/* Apple-style scrollbar */
-::-webkit-scrollbar { width: 8px; }
+/* ── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--apple-separator); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--apple-tertiary); }
+::-webkit-scrollbar-thumb { background: var(--s-separator); border-radius: 3px; }
 
-/* Smooth page transitions */
-main { animation: fadeIn 0.2s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+/* ── Animations ─────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin   { to { transform: rotate(360deg); } }
+
+.anim-fade-up { animation: fadeUp 0.22s ease both; }
+.anim-spin    { animation: spin 1s linear infinite; }

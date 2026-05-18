@@ -1,18 +1,16 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ConsultationProvider } from '@/context/ConsultationContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'] });
-
 export const metadata: Metadata = {
-  title: 'СимптоМед — медицинский помощник',
+  title: 'Symed — AI медицинский помощник',
   description: 'Опишите симптомы и получите рекомендацию специалиста. Быстро, точно, бесплатно.',
   openGraph: {
-    title: 'СимптоМед',
+    title: 'Symed',
     description: 'Опишите симптомы — получите рекомендацию специалиста',
     url: 'https://symed.uz',
-    siteName: 'СимптоМед',
+    siteName: 'Symed',
     locale: 'ru_UZ',
     type: 'website',
   },
@@ -20,11 +18,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
-      <body className={inter.className}>
-        <ConsultationProvider>
-          {children}
-        </ConsultationProvider>
+    <html lang="ru" suppressHydrationWarning>
+      <body>
+        <ThemeProvider>
+          <ConsultationProvider>
+            {children}
+          </ConsultationProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
