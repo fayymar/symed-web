@@ -21,15 +21,29 @@ export default function SymptomsPage() {
     setError(''); setLoading(true);
     try {
       const user = auth.getUser();
-      const data = await api.startConsultation(user?.id ?? null, text.trim());
+
+      // Запускаем консультацию и параллельно проверяем профиль (если залогинен)
+      const [data, profileData] = await Promise.all([
+        api.startConsultation(user?.id ?? null, text.trim()),
+        user ? api.getProfile(user.id) : Promise.resolve(null),
+      ]);
+
       if (data.red_flag) {
         router.push(`/consultation/emergency?msg=${encodeURIComponent(data.red_flag.text)}`);
         return;
       }
+
       setSessionId(data.session_id);
       setSymptoms(text.trim());
       setQuestions(data.questions || []);
-      router.push('/consultation/questions');
+
+      // Если профиль не заполнен → сначала собираем анамнез
+      const profileEmpty = user && (!profileData?.exists || !profileData?.profile?.chronic_diseases);
+      if (profileEmpty) {
+        router.push('/consultation/anamnesis');
+      } else {
+        router.push('/consultation/questions');
+      }
     } catch {
       setError('Ошибка соединения. Попробуйте ещё раз.');
     } finally {
