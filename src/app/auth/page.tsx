@@ -119,17 +119,19 @@ export default function AuthPage() {
                 </li>
               </ol>
 
-              <div className="relative rounded-2xl py-5 px-4 mb-5 flex items-center justify-center"
+              <div className="rounded-2xl px-5 py-4 mb-5"
                 style={{ background: 'var(--s-bg)', border: '1px solid var(--s-separator)' }}>
-                <span className="text-4xl font-mono font-bold tracking-[0.25em]" style={{ color: 'var(--s-label)' }}>
-                  {code || '------'}
-                </span>
-                <button onClick={copyCode}
-                  className="absolute right-3 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-                  style={{ background: copied ? 'var(--s-green)' : 'var(--s-fill-secondary)', color: copied ? '#fff' : 'var(--s-label)' }}>
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
-                  {copied ? 'Скопировано' : 'Копировать'}
-                </button>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-4xl font-mono font-bold tracking-[0.2em]" style={{ color: 'var(--s-label)' }}>
+                    {code || '------'}
+                  </span>
+                  <button onClick={copyCode}
+                    className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                    style={{ background: copied ? 'var(--s-green)' : 'var(--s-fill-secondary)', color: copied ? '#fff' : 'var(--s-label)' }}>
+                    {copied ? <Check size={12} /> : <Copy size={12} />}
+                    {copied ? 'Скопировано' : 'Копировать'}
+                  </button>
+                </div>
               </div>
 
               <a href="https://t.me/medgg_bot" target="_blank" rel="noopener noreferrer"
