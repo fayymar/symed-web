@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import SubNav from '@/components/SubNav';
 import { FileDown, ArrowLeft, Loader2, AlertCircle, User, Pill, BookOpen, Activity, FileText } from 'lucide-react';
 
 interface Profile {
@@ -89,6 +90,7 @@ export default function ExportPage() {
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>Экспорт анамнеза</h1>
         <ThemeToggle />
       </header>
+      <SubNav />
 
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '24px 16px' }}>
         {!userId && !loading && (

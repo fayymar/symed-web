@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import SubNav from '@/components/SubNav';
 
 interface Medication {
   id: string;
@@ -128,6 +129,7 @@ export default function MedicationsPage() {
           {showForm ? <><X size={16} /> Закрыть</> : <><Plus size={16} /> Добавить</>}
         </button>
       </header>
+      <SubNav />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
 

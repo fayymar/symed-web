@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import SubNav from '@/components/SubNav';
 import { MapPin, Phone, Clock, Navigation, Loader2, AlertCircle, ArrowLeft, Building2, Search } from 'lucide-react';
 
 interface Clinic {
@@ -101,6 +102,7 @@ export default function ClinicsPage() {
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>Клиники</h1>
         <ThemeToggle />
       </header>
+      <SubNav />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
         {geoLoading && (

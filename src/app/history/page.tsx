@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import SubNav from '@/components/SubNav';
 
 interface Consultation {
   id: string;
@@ -42,7 +43,11 @@ function parseSymptoms(raw: string): string {
 }
 
 function formatDate(s: string) {
-  const d = new Date(s.endsWith('Z') ? s : s + 'Z');
+  if (!s) return '';
+  // Supabase may return "2024-01-15T10:30:00+00:00" — already has tz offset, don't append Z
+  const normalized = (s.endsWith('Z') || s.includes('+') || /\d{2}:\d{2}$/.test(s.slice(-6))) ? s : s + 'Z';
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return s;
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
@@ -93,6 +98,7 @@ export default function HistoryPage() {
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>История консультаций</h1>
         <ThemeToggle />
       </header>
+      <SubNav />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
         {loading && (

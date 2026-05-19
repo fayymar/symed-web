@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import SubNav from '@/components/SubNav';
 import {
   BookOpen, Plus, X, Thermometer, Heart, Activity,
   Scale, Smile, FileText, ArrowLeft, Loader2, AlertCircle,
@@ -147,6 +148,7 @@ export default function DiaryPage() {
           {showForm ? <><X size={16} /> Закрыть</> : <><Plus size={16} /> Запись</>}
         </button>
       </header>
+      <SubNav />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
         {showForm && (
