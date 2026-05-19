@@ -11,7 +11,6 @@ export const api = {
       body: JSON.stringify(data),
     }).then(r => r.json()),
 
-  // user_id опционален — гости могут консультироваться без входа
   startConsultation: (userId: number | null, symptoms: string) =>
     fetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
@@ -43,7 +42,15 @@ export const api = {
   getConsultations: (userId: number) =>
     fetch(`${API_BASE}/api/consultations/${userId}`).then(r => r.json()),
 
-  // Web auth — код для входа через бота
+  getMedications: (userId: number) =>
+    fetch(`${API_BASE}/api/medications/${userId}`).then(r => r.json()),
+
+  getDiary: (userId: number) =>
+    fetch(`${API_BASE}/api/diary/${userId}`).then(r => r.json()),
+
+  getHealthMetrics: (userId: number, type?: string) =>
+    fetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`).then(r => r.json()),
+
   requestAuthCode: (code: string) =>
     fetch(`${API_BASE}/api/auth/request`, {
       method: 'POST',
