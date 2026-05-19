@@ -45,8 +45,22 @@ export const api = {
   getMedications: (userId: number) =>
     fetch(`${API_BASE}/api/medications/${userId}`).then(r => r.json()),
 
+  addMedication: (userId: number, data: object) =>
+    fetch(`${API_BASE}/api/medications/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => r.json()),
+
   getDiary: (userId: number) =>
     fetch(`${API_BASE}/api/diary/${userId}`).then(r => r.json()),
+
+  addDiaryEntry: (userId: number, data: object) =>
+    fetch(`${API_BASE}/api/diary/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => r.json()),
 
   getHealthMetrics: (userId: number, type?: string) =>
     fetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`).then(r => r.json()),

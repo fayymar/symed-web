@@ -2,16 +2,42 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ClipboardList, AlertTriangle, Clock, CheckCircle, Loader2 } from 'lucide-react';
-import { auth } from '@/lib/auth';
+import { ArrowLeft, ClipboardList, AlertTriangle, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useTheme } from '@/context/ThemeContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface Consultation {
   id: string;
   symptoms: string;
+  symptoms_summary?: string;
   recommended_doctor: string;
   urgency_level: string;
   created_at: string;
+}
+
+function parseSymptoms(raw: string): string {
+  if (!raw) return '—';
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return trimmed;
+  try {
+    const parsed = JSON.parse(trimmed);
+    // format: {"text": "...", "history": [...]}
+    if (parsed.text) return parsed.text;
+    // format: {"history": [{"question": null, "answer": "..."}]}
+    if (Array.isArray(parsed.history) && parsed.history.length > 0) {
+      const first = parsed.history.find((h: Record<string, unknown>) => !h.question) ?? parsed.history[0];
+      if (first?.answer) return String(first.answer);
+    }
+    // format: [{"question": null, "answer": "..."}]
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const first = parsed.find((h: Record<string, unknown>) => !h.question) ?? parsed[0];
+      if (first?.answer) return String(first.answer);
+    }
+    return trimmed;
+  } catch {
+    return trimmed;
+  }
 }
 
 function formatDate(s: string) {
@@ -21,14 +47,17 @@ function formatDate(s: string) {
 
 function UrgencyBadge({ level }: { level: string }) {
   const map: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-    high:   { icon: <AlertTriangle size={12} />, label: 'Срочно',         color: 'var(--s-red)',    bg: 'rgba(255,59,48,0.1)' },
-    medium: { icon: <Clock size={12} />,         label: 'Скоро',          color: 'var(--s-orange)', bg: 'rgba(255,149,0,0.1)' },
-    low:    { icon: <CheckCircle size={12} />,   label: 'Планово',        color: 'var(--s-green)',  bg: 'rgba(52,199,89,0.1)' },
+    high:   { icon: <AlertTriangle size={12} />, label: 'Срочно',  color: '#ef4444', bg: '#fee2e2' },
+    medium: { icon: <Clock size={12} />,         label: 'Скоро',   color: '#f59e0b', bg: '#fef3c7' },
+    low:    { icon: <CheckCircle size={12} />,   label: 'Планово', color: '#10b981', bg: '#d1fae5' },
   };
   const u = map[level] ?? map.medium;
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ color: u.color, background: u.bg }}>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '20px',
+      color: u.color, background: u.bg, whiteSpace: 'nowrap', flexShrink: 0,
+    }}>
       {u.icon}{u.label}
     </span>
   );
@@ -36,75 +65,87 @@ function UrgencyBadge({ level }: { level: string }) {
 
 export default function HistoryPage() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [items, setItems] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
-    const user = auth.getUser()!;
-    api.getConsultations(user.id)
-      .then(d => setItems(d.records || []))
+    const stored = localStorage.getItem('symed_user_id');
+    if (!stored) { router.push('/auth'); return; }
+    const userId = parseInt(stored);
+    api.getConsultations(userId)
+      .then(d => setItems(d.records ?? d.consultations ?? (Array.isArray(d) ? d : [])))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [router]);
 
   return (
-    <main className="min-h-screen pb-12" style={{ background: 'var(--s-bg)' }}>
-      <header className="px-6 py-3 sticky top-0 z-10"
-        style={{ background: 'var(--s-nav-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--s-separator)' }}>
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')}
-            className="w-8 h-8 flex items-center justify-center rounded-full"
-            style={{ background: 'var(--s-fill-secondary)', color: 'var(--s-label)' }}>
-            <ChevronLeft size={18} strokeWidth={2.5} />
-          </button>
-          <span className="font-semibold" style={{ color: 'var(--s-label)' }}>История консультаций</span>
-        </div>
+    <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
+      <header style={{
+        background: 'var(--s-surface)', borderBottom: '1px solid var(--s-border)',
+        padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px',
+        position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-text-muted)', display: 'flex' }}>
+          <ArrowLeft size={20} />
+        </button>
+        <ClipboardList size={22} color="var(--s-primary)" />
+        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>История консультаций</h1>
+        <ThemeToggle />
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 size={28} className="animate-spin" style={{ color: 'var(--s-blue)' }} />
-            <p style={{ color: 'var(--s-secondary)' }}>Загружаем историю...</p>
+      <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
+        {loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px', gap: '12px' }}>
+            <Loader2 size={28} color="var(--s-primary)" style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: 'var(--s-text-muted)' }}>Загружаем историю…</p>
           </div>
-        ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-            <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: 'var(--s-surface)' }}>
-              <ClipboardList size={28} style={{ color: 'var(--s-tertiary)' }} />
-            </div>
+        )}
+
+        {!loading && items.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '16px', textAlign: 'center' }}>
+            <ClipboardList size={48} style={{ color: 'var(--s-text-muted)', opacity: 0.4 }} />
             <div>
-              <p className="font-semibold mb-1" style={{ color: 'var(--s-label)' }}>История пуста</p>
-              <p className="text-sm" style={{ color: 'var(--s-secondary)' }}>Ваши консультации появятся здесь</p>
+              <p style={{ fontWeight: 600, marginBottom: '4px' }}>История пуста</p>
+              <p style={{ fontSize: '14px', color: 'var(--s-text-muted)' }}>Ваши консультации появятся здесь</p>
             </div>
-            <button onClick={() => router.push('/consultation')}
-              className="px-6 py-2.5 rounded-full text-sm font-semibold text-white"
-              style={{ background: 'var(--s-blue)' }}>
+            <button onClick={() => router.push('/consultation')} style={{
+              background: 'var(--s-primary)', color: '#fff', border: 'none',
+              borderRadius: '20px', padding: '10px 24px', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
+            }}>
               Начать консультацию
             </button>
           </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {items.map(item => (
-              <div key={item.id} className="rounded-3xl p-5"
-                style={{ background: 'var(--s-surface)', border: '1px solid var(--s-separator)' }}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <p className="text-sm font-medium line-clamp-2 flex-1" style={{ color: 'var(--s-label)' }}>
-                    {item.symptoms}
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {items.map(item => {
+            const sympText = parseSymptoms(item.symptoms_summary ?? item.symptoms ?? '');
+            return (
+              <div key={item.id} style={{
+                background: 'var(--s-surface)', borderRadius: '14px',
+                border: '1px solid var(--s-border)', padding: '16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, flex: 1, lineHeight: '1.4' }}>
+                    {sympText}
                   </p>
                   <UrgencyBadge level={item.urgency_level} />
                 </div>
                 {item.recommended_doctor && (
-                  <p className="text-sm mb-2" style={{ color: 'var(--s-blue)' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: '14px', color: 'var(--s-primary)' }}>
                     → {item.recommended_doctor}
                   </p>
                 )}
-                <p className="text-xs" style={{ color: 'var(--s-tertiary)' }}>{formatDate(item.created_at)}</p>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--s-text-muted)' }}>
+                  {formatDate(item.created_at)}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
+            );
+          })}
+        </div>
+      </main>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
