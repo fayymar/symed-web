@@ -30,7 +30,7 @@ export default function AuthPage() {
     setCode(newCode);
     codeRef.current = newCode;
     api.requestAuthCode(newCode)
-      .then(() => setStatus('waiting'))
+      .then(() => setTimeout(() => setStatus('waiting'), 1500))
       .catch(() => setErrorMsg('Не удалось связаться с сервером. Обновите страницу.'));
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router]);
@@ -40,7 +40,7 @@ export default function AuthPage() {
     pollRef.current = setInterval(async () => {
       try {
         const data = await api.checkAuthStatus(codeRef.current);
-        if (data.verified) {
+        if (data.verified && data.id) {
           clearInterval(pollRef.current!);
           const user: TelegramUser = {
             id: data.id, first_name: data.first_name || '',
