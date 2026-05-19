@@ -7,6 +7,8 @@ import { auth, TelegramUser } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+const BOT_USERNAME = 'medgg_bot';
+
 function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -74,6 +76,9 @@ export default function AuthPage() {
     api.requestAuthCode(newCode).then(() => setStatus('waiting')).catch(() => setErrorMsg('Ошибка сервера.'));
   };
 
+  // Deep link — code embedded in URL, auto-verified on bot side
+  const deepLink = code ? `https://t.me/${BOT_USERNAME}?start=auth_${code}` : `https://t.me/${BOT_USERNAME}`;
+
   return (
     <main className="min-h-screen flex flex-col" style={{ background: 'var(--s-bg)' }}>
       <nav className="px-6 py-3 flex items-center justify-between sticky top-0 z-50"
@@ -107,40 +112,59 @@ export default function AuthPage() {
             </div>
           ) : (
             <div className="rounded-3xl p-7" style={{ background: 'var(--s-surface)', border: '1px solid var(--s-separator)' }}>
-              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--s-label)' }}>Как войти:</p>
-              <ol className="text-sm space-y-2.5 mb-6" style={{ color: 'var(--s-secondary)' }}>
-                <li className="flex gap-2.5">
-                  <span className="font-bold flex-shrink-0" style={{ color: 'var(--s-blue)' }}>1.</span>
-                  <span>Откройте <strong style={{ color: 'var(--s-label)' }}>@medgg_bot</strong> в Telegram</span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="font-bold flex-shrink-0" style={{ color: 'var(--s-blue)' }}>2.</span>
-                  <span>Отправьте боту этот код:</span>
-                </li>
-              </ol>
 
-              <div className="rounded-2xl px-5 pt-5 pb-4 mb-5 flex flex-col items-center gap-4"
-                style={{ background: 'var(--s-bg)', border: '1px solid var(--s-separator)' }}>
-                <span className="text-4xl font-mono font-bold tracking-[0.25em]" style={{ color: 'var(--s-label)' }}>
-                  {code || '------'}
-                </span>
-                <button onClick={copyCode}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl transition w-full justify-center"
-                  style={{ background: copied ? 'var(--s-green)' : 'var(--s-fill-secondary)', color: copied ? '#fff' : 'var(--s-label)' }}>
-                  {copied ? <Check size={13} /> : <Copy size={13} />}
-                  {copied ? 'Скопировано' : 'Копировать код'}
-                </button>
+              {/* === Способ 1: Deep link (быстрый) === */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--s-label)' }}>
+                  Способ 1 — одним нажатием
+                </p>
+                <p className="text-xs mb-3" style={{ color: 'var(--s-secondary)' }}>
+                  Нажмите кнопку ниже — Telegram откроется и код подтвердится автоматически.
+                </p>
+                <a
+                  href={deepLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-sm text-white transition hover:opacity-90"
+                  style={{ background: code ? 'var(--s-blue)' : 'var(--s-fill-secondary)', pointerEvents: code ? 'auto' : 'none' }}
+                >
+                  <Send size={15} strokeWidth={2} />
+                  Войти через Telegram
+                </a>
               </div>
 
-              <a href="https://t.me/medgg_bot" target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm text-white transition hover:opacity-90 mb-4"
-                style={{ background: 'var(--s-blue)' }}>
-                <Send size={15} strokeWidth={2} />
-                Открыть @medgg_bot
-              </a>
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex-1 h-px" style={{ background: 'var(--s-separator)' }} />
+                <span className="text-xs" style={{ color: 'var(--s-tertiary)' }}>или</span>
+                <div className="flex-1 h-px" style={{ background: 'var(--s-separator)' }} />
+              </div>
+
+              {/* === Способ 2: Ручной ввод кода === */}
+              <div>
+                <p className="text-sm font-semibold mb-1" style={{ color: 'var(--s-label)' }}>
+                  Способ 2 — вручную
+                </p>
+                <p className="text-xs mb-3" style={{ color: 'var(--s-secondary)' }}>
+                  Скопируйте код и отправьте его боту <strong style={{ color: 'var(--s-label)' }}>@{BOT_USERNAME}</strong>
+                </p>
+
+                <div className="rounded-2xl px-5 pt-5 pb-4 mb-3 flex flex-col items-center gap-4"
+                  style={{ background: 'var(--s-bg)', border: '1px solid var(--s-separator)' }}>
+                  <span className="text-4xl font-mono font-bold tracking-[0.25em]" style={{ color: 'var(--s-label)' }}>
+                    {code || '------'}
+                  </span>
+                  <button onClick={copyCode}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl transition w-full justify-center"
+                    style={{ background: copied ? 'var(--s-green)' : 'var(--s-fill-secondary)', color: copied ? '#fff' : 'var(--s-label)' }}>
+                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    {copied ? 'Скопировано' : 'Копировать код'}
+                  </button>
+                </div>
+              </div>
 
               {status === 'waiting' && !errorMsg && (
-                <div className="flex items-center justify-center gap-2 text-xs" style={{ color: 'var(--s-tertiary)' }}>
+                <div className="flex items-center justify-center gap-2 text-xs mt-3" style={{ color: 'var(--s-tertiary)' }}>
                   <Loader2 size={13} className="animate-spin" style={{ color: 'var(--s-blue)' }} />
                   Ожидаем подтверждения...
                 </div>

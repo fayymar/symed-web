@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
@@ -14,9 +15,9 @@ const NAV_ITEMS = [
 ];
 
 interface PageHeaderProps {
-  title?: string;         // unused visually but kept for compat
+  title?: string;
   action?: React.ReactNode;
-  showSubNav?: boolean;   // kept for compat, ignored
+  showSubNav?: boolean;
 }
 
 export default function PageHeader({ action }: PageHeaderProps) {
@@ -28,8 +29,8 @@ export default function PageHeader({ action }: PageHeaderProps) {
       <style>{`
         .symed-nav-scroll { scrollbar-width: none; }
         .symed-nav-scroll::-webkit-scrollbar { display: none; }
-        .symed-nav-link { transition: color 0.15s; }
         .symed-nav-link:hover { color: var(--s-text) !important; }
+        .symed-consult-btn:hover { opacity: 0.85; }
       `}</style>
       <header style={{
         position: 'sticky',
@@ -42,31 +43,27 @@ export default function PageHeader({ action }: PageHeaderProps) {
         height: '44px',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 20px',
-        gap: '0',
+        padding: '0 16px',
+        gap: '8px',
       }}>
-        {/* Logo — left, like Apple logo */}
+
+        {/* Back arrow — left */}
         <button
           onClick={() => router.push('/dashboard')}
+          title="На главную"
           style={{
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: 'var(--s-text)',
-            fontWeight: 700,
-            fontSize: '15px',
-            letterSpacing: '-0.5px',
-            padding: '0',
-            flexShrink: 0,
+            color: 'var(--s-primary)',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            padding: '4px',
+            borderRadius: '6px',
+            flexShrink: 0,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M12 2C8.5 2 6 4.5 6 7.5c0 2 1 3.8 2.5 4.9C5.5 13.8 3 17 3 20.5c0 .8.7 1.5 1.5 1.5h15c.8 0 1.5-.7 1.5-1.5C21 17 18.5 13.8 15.5 12.4 17 11.3 18 9.5 18 7.5 18 4.5 15.5 2 12 2z" fill="currentColor"/>
-          </svg>
-          Symed
+          <ArrowLeft size={18} strokeWidth={2.5} />
         </button>
 
         {/* Nav items — center, scrollable */}
@@ -79,7 +76,7 @@ export default function PageHeader({ action }: PageHeaderProps) {
             justifyContent: 'center',
             gap: '0',
             overflowX: 'auto',
-            padding: '0 12px',
+            padding: '0 4px',
           }}
         >
           {NAV_ITEMS.map(({ label, href }) => {
@@ -93,13 +90,14 @@ export default function PageHeader({ action }: PageHeaderProps) {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  padding: '4px 10px',
+                  padding: '4px 9px',
                   fontSize: '13px',
                   fontWeight: active ? 700 : 400,
                   color: active ? 'var(--s-text)' : 'var(--s-text-secondary)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   letterSpacing: active ? '-0.2px' : '0',
+                  transition: 'color 0.15s',
                 }}
               >
                 {label}
@@ -108,9 +106,27 @@ export default function PageHeader({ action }: PageHeaderProps) {
           })}
         </nav>
 
-        {/* Right: ThemeToggle + optional action */}
+        {/* Right: ThemeToggle + консультация + optional action */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <ThemeToggle />
+          <button
+            className="symed-consult-btn"
+            onClick={() => router.push('/consultation')}
+            style={{
+              background: 'var(--s-primary)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '999px',
+              padding: '5px 13px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'opacity 0.15s',
+            }}
+          >
+            Консультация
+          </button>
           {action}
         </div>
       </header>
