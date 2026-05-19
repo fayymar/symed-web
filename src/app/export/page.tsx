@@ -207,10 +207,10 @@ export default function ExportPage() {
                       <div key={i} style={{ background: 'var(--s-surface)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: '14px' }}>{String(m.name ?? '—')}</div>
-                          {m.dosage && <div style={{ fontSize: '13px', color: 'var(--s-text-muted)' }}>{String(m.dosage)}</div>}
-                          {m.frequency && <div style={{ fontSize: '13px', color: 'var(--s-text-muted)' }}>{String(m.frequency)}</div>}
+                          {!!m.dosage && <div style={{ fontSize: '13px', color: 'var(--s-text-muted)' }}>{String(m.dosage)}</div>}
+                          {!!m.frequency && <div style={{ fontSize: '13px', color: 'var(--s-text-muted)' }}>{String(m.frequency)}</div>}
                         </div>
-                        {m.start_date && (
+                        {!!m.start_date && (
                           <div style={{ fontSize: '12px', color: 'var(--s-text-muted)' }}>с {formatDate(String(m.start_date))}</div>
                         )}
                       </div>
@@ -236,8 +236,8 @@ export default function ExportPage() {
                           {e.weight && <span>Вес: {String(e.weight)} кг</span>}
                           {e.mood && <span>Самочувствие: {String(e.mood)}</span>}
                         </div>
-                        {e.symptoms && <div style={{ fontSize: '13px', marginTop: '4px' }}>Симптомы: {String(e.symptoms)}</div>}
-                        {e.notes && <div style={{ fontSize: '13px', marginTop: '4px', color: 'var(--s-text-muted)' }}>{String(e.notes)}</div>}
+                        {!!e.symptoms && <div style={{ fontSize: '13px', marginTop: '4px' }}>Симптомы: {String(e.symptoms)}</div>}
+                        {!!e.notes && <div style={{ fontSize: '13px', marginTop: '4px', color: 'var(--s-text-muted)' }}>{String(e.notes)}</div>}
                       </div>
                     ))}
                   </div>
@@ -264,7 +264,7 @@ export default function ExportPage() {
                         <div key={i} style={{ background: 'var(--s-surface)', borderRadius: '8px', padding: '12px' }}>
                           <div style={{ fontSize: '12px', color: 'var(--s-text-muted)', marginBottom: '4px' }}>{formatDate(String(c.created_at ?? ''))}</div>
                           <div style={{ fontSize: '14px', fontWeight: 500 }}>{sympText}</div>
-                          {c.urgency_level && <div style={{ fontSize: '12px', color: 'var(--s-text-muted)', marginTop: '4px' }}>Уровень: {String(c.urgency_level)}</div>}
+                          {!!c.urgency_level && <div style={{ fontSize: '12px', color: 'var(--s-text-muted)', marginTop: '4px' }}>Уровень: {String(c.urgency_level)}</div>}
                         </div>
                       );
                     })}
