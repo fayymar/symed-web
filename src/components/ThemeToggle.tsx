@@ -17,3 +17,5 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     </button>
   );
 }
+
+export default ThemeToggle;
