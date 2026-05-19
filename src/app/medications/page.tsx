@@ -21,8 +21,6 @@ interface Medication {
 }
 
 const FREQ_OPTIONS = ['1 раз в день', '2 раза в день', '3 раза в день', 'По необходимости'];
-const TIME_CHIPS = ['07:00', '08:00', '09:00', '12:00', '13:00', '15:00', '18:00', '20:00', '21:00', '22:00'];
-
 function formatDate(s: string) {
   if (!s) return '';
   try {
@@ -47,6 +45,7 @@ export default function MedicationsPage() {
   const [dosage, setDosage] = useState('');
   const [frequency, setFrequency] = useState('');
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [newTime, setNewTime] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -75,12 +74,8 @@ export default function MedicationsPage() {
   }
 
   function resetForm() {
-    setName(''); setDosage(''); setFrequency(''); setSelectedTimes([]);
+    setName(''); setDosage(''); setFrequency(''); setSelectedTimes([]); setNewTime('');
     setStartDate(''); setEndDate(''); setNotes(''); setSaved(false);
-  }
-
-  function toggleTime(t: string) {
-    setSelectedTimes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   }
 
   async function handleSave() {
@@ -171,16 +166,50 @@ export default function MedicationsPage() {
               <div style={{ fontSize: '13px', color: 'var(--s-text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Clock size={14} /> Время приёма
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {TIME_CHIPS.map(t => (
-                  <button key={t} onClick={() => toggleTime(t)} style={{
-                    background: selectedTimes.includes(t) ? 'var(--s-primary)' : 'var(--s-bg)',
-                    color: selectedTimes.includes(t) ? '#fff' : 'var(--s-text)',
-                    border: `1px solid ${selectedTimes.includes(t) ? 'var(--s-primary)' : 'var(--s-border)'}`,
-                    borderRadius: '8px', padding: '5px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
-                  }}>{t}</button>
-                ))}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="time"
+                  value={newTime}
+                  onChange={e => setNewTime(e.target.value)}
+                  style={{
+                    flex: 1, background: 'var(--s-bg)', border: '1px solid var(--s-border)',
+                    borderRadius: '8px', padding: '8px 10px', color: 'var(--s-text)', fontSize: '15px',
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (newTime && !selectedTimes.includes(newTime)) {
+                      setSelectedTimes(prev => [...prev, newTime].sort());
+                    }
+                    setNewTime('');
+                  }}
+                  disabled={!newTime}
+                  style={{
+                    background: 'var(--s-primary)', color: '#fff', border: 'none',
+                    borderRadius: '8px', padding: '8px 16px', cursor: 'pointer',
+                    fontWeight: 600, fontSize: '14px', opacity: newTime ? 1 : 0.5,
+                  }}
+                >
+                  <Plus size={16} />
+                </button>
               </div>
+              {selectedTimes.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {selectedTimes.map(t => (
+                    <span key={t} style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      background: 'var(--s-primary)', color: '#fff',
+                      borderRadius: '8px', padding: '5px 10px', fontSize: '13px', fontWeight: 500,
+                    }}>
+                      {t}
+                      <button
+                        onClick={() => setSelectedTimes(prev => prev.filter(x => x !== t))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '0', lineHeight: 1, marginLeft: '2px' }}
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
