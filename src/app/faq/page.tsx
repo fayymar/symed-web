@@ -1,88 +1,67 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronDown } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
+import PageHeader from '@/components/PageHeader';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const FAQ = [
-  {
-    q: 'Как начать консультацию?',
-    a: 'Нажмите «Новая консультация» → опишите симптомы → ответьте на уточняющие вопросы → получите рекомендацию специалиста. Вход не обязателен — можно консультироваться как гость.',
-  },
-  {
-    q: 'Заменяет ли Symed визит к врачу?',
-    a: 'Нет. Symed — это предварительная оценка симптомов, которая помогает понять к какому специалисту обратиться. При острых или тяжёлых симптомах — обращайтесь к врачу или вызывайте скорую (103).',
-  },
-  {
-    q: 'Зачем заполнять профиль и анамнез?',
-    a: 'Хронические заболевания, аллергии и другие данные позволяют AI давать более точные рекомендации. Без анамнеза рекомендация будет более общей.',
-  },
-  {
-    q: 'Безопасны ли мои данные?',
-    a: 'Данные хранятся в защищённой базе Supabase. Они не передаются третьим лицам и не используются в рекламных целях.',
-  },
-  {
-    q: 'Как войти в аккаунт?',
-    a: 'Нажмите «Войти» → на сайте отобразится 6-значный код → откройте @medgg_bot в Telegram и отправьте ему этот код. Вход выполнится автоматически.',
-  },
-  {
-    q: 'Что такое дневник здоровья?',
-    a: 'Дневник здоровья — раздел для отслеживания показателей: температура, давление, пульс, вес, самочувствие. Записи можно вносить через Telegram-бота @medgg_bot.',
-  },
-  {
-    q: 'Как добавить лекарство с напоминанием?',
-    a: 'Напоминания о лекарствах настраиваются в Telegram-боте @medgg_bot: откройте бота → выберите «Лекарства» → «Добавить лекарство».',
-  },
-  {
-    q: 'Как работает поиск клиник?',
-    a: 'Раздел «Клиники» показывает список медицинских учреждений Ташкента с фильтром по специализации. В будущем появится поиск по геолокации.',
-  },
-  {
-    q: 'Что такое экспорт анамнеза?',
-    a: 'Экспорт формирует текстовый файл с вашими данными профиля, историей болезни и последними консультациями — удобно взять с собой на приём к врачу.',
-  },
-  {
-    q: 'Можно ли использовать без Telegram?',
-    a: 'Да — консультации доступны без входа. Для сохранения истории, дневника и лекарств нужна авторизация через Telegram.',
-  },
+  { q: 'Как работает диагностика?', a: 'Вы описываете симптомы, AI задаёт уточняющие вопросы и формирует рекомендацию на основе вашего анамнеза.' },
+  { q: 'Заменяет ли Symed врача?', a: 'Нет. Symed — вспомогательный инструмент. Всегда консультируйтесь с врачом для постановки диагноза и лечения.' },
+  { q: 'Как авторизоваться?', a: 'Откройте раздел «Войти», скопируйте 6-значный код и отправьте его в Telegram-бот @SyMed_Bot. Код действует 24 часа.' },
+  { q: 'Мои данные в безопасности?', a: 'Да. Данные хранятся в зашифрованной базе Supabase. Мы не передаём их третьим лицам.' },
+  { q: 'Что такое анамнез?', a: 'Анамнез — это история вашего здоровья: хронические болезни, аллергии, наследственность, образ жизни. Он помогает AI давать точные рекомендации.' },
+  { q: 'Как добавить лекарство?', a: 'Перейдите в раздел «Лекарства» и нажмите «+ Добавить». Укажите название, дозировку, частоту и время приёма.' },
+  { q: 'Как экспортировать данные?', a: 'В разделе «Экспорт» нажмите «Скачать PDF» — браузер откроет диалог печати, выберите «Сохранить как PDF».' },
+  { q: 'Что такое дневник здоровья?', a: 'Дневник позволяет фиксировать ежедневные показатели: температуру, давление, пульс, вес и самочувствие.' },
+  { q: 'Как найти ближайшую клинику?', a: 'Откройте раздел «Клиники» — сайт запросит геолокацию и отсортирует учреждения по расстоянию от вас.' },
+  { q: 'Можно без регистрации?', a: 'Да, консультация доступна без авторизации. Но для сохранения истории и анамнеза нужна привязка к Telegram.' },
 ];
 
-export default function FaqPage() {
-  const router = useRouter();
+export default function FAQPage() {
+  const { theme } = useTheme();
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <main className="min-h-screen pb-12" style={{ background: 'var(--s-bg)' }}>
-      <header className="px-6 py-3 sticky top-0 z-10"
-        style={{ background: 'var(--s-nav-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--s-separator)' }}>
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')}
-            className="w-8 h-8 flex items-center justify-center rounded-full"
-            style={{ background: 'var(--s-fill-secondary)', color: 'var(--s-label)' }}>
-            <ChevronLeft size={18} strokeWidth={2.5} />
-          </button>
-          <span className="font-semibold" style={{ color: 'var(--s-label)' }}>Частые вопросы</span>
-        </div>
-      </header>
+    <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
+      <PageHeader title="Частые вопросы" />
 
-      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-2">
-        {FAQ.map((item, i) => (
-          <div key={i} className="rounded-2xl overflow-hidden"
-            style={{ background: 'var(--s-surface)', border: '1px solid var(--s-separator)' }}>
-            <button className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
-              onClick={() => setOpen(open === i ? null : i)}>
-              <span className="font-medium text-sm" style={{ color: 'var(--s-label)' }}>{item.q}</span>
-              <ChevronDown size={16} strokeWidth={2}
-                style={{ color: 'var(--s-tertiary)', transform: open === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
-            </button>
-            {open === i && (
-              <div className="px-5 pb-4 text-sm leading-relaxed" style={{ color: 'var(--s-secondary)', borderTop: '1px solid var(--s-separator)', paddingTop: '12px' }}>
-                {item.a}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </main>
+      <main style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {FAQ.map((item, i) => (
+            <div key={i} style={{
+              background: 'var(--s-surface)', borderRadius: '14px',
+              border: '1px solid var(--s-border)', overflow: 'hidden',
+            }}>
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', gap: '12px',
+                  padding: '14px 16px', background: 'none', border: 'none',
+                  cursor: 'pointer', color: 'var(--s-text)', textAlign: 'left',
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: '14px', lineHeight: '1.4' }}>{item.q}</span>
+                {open === i
+                  ? <ChevronUp size={16} color="var(--s-text-muted)" style={{ flexShrink: 0 }} />
+                  : <ChevronDown size={16} color="var(--s-text-muted)" style={{ flexShrink: 0 }} />}
+              </button>
+              {open === i && (
+                <div style={{
+                  padding: '0 16px 14px',
+                  fontSize: '14px', lineHeight: '1.6',
+                  color: 'var(--s-text-muted)',
+                  borderTop: '1px solid var(--s-border)',
+                  paddingTop: '12px',
+                }}>
+                  {item.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
   );
 }
