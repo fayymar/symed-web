@@ -4,6 +4,7 @@
 :root {
   --s-bg:              #F5F5F7;
   --s-surface:         #FFFFFF;
+  --s-surface-raw:     255,255,255;
   --s-surface-2:       #F5F5F7;
   --s-label:           #1D1D1F;
   --s-label-2:         #3A3A3C;
@@ -28,6 +29,7 @@
 [data-theme="dark"] {
   --s-bg:              #000000;
   --s-surface:         #1C1C1E;
+  --s-surface-raw:     28,28,30;
   --s-surface-2:       #2C2C2E;
   --s-label:           #FFFFFF;
   --s-label-2:         #EBEBF5;

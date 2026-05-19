@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
-import ThemeToggle from '@/components/ThemeToggle';
-import SubNav from '@/components/SubNav';
+import PageHeader from '@/components/PageHeader';
 import { MapPin, Phone, Clock, Navigation, Loader2, AlertCircle, ArrowLeft, Building2, Search } from 'lucide-react';
 
 interface Clinic {
@@ -94,15 +93,7 @@ export default function ClinicsPage() {
 
   return (
     <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
-      <header style={{ background: 'var(--s-surface)', borderBottom: '1px solid var(--s-border)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-text-muted)', display: 'flex' }}>
-          <ArrowLeft size={20} />
-        </button>
-        <Building2 size={22} color="var(--s-primary)" />
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>Клиники</h1>
-        <ThemeToggle />
-      </header>
-      <SubNav />
+      <PageHeader title="Клиники" />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '20px 16px' }}>
         {geoLoading && (

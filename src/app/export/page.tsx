@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/PageHeader';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
-import ThemeToggle from '@/components/ThemeToggle';
-import SubNav from '@/components/SubNav';
+
 import { FileDown, ArrowLeft, Loader2, AlertCircle, User, Pill, BookOpen, Activity, FileText } from 'lucide-react';
 
 interface Profile {
@@ -81,16 +81,9 @@ export default function ExportPage() {
 
   return (
     <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
-      {/* Screen header — hidden in print */}
-      <header className="no-print" style={{ background: 'var(--s-surface)', borderBottom: '1px solid var(--s-border)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-text-muted)', display: 'flex' }}>
-          <ArrowLeft size={20} />
-        </button>
-        <FileDown size={22} color="var(--s-primary)" />
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>Экспорт анамнеза</h1>
-        <ThemeToggle />
-      </header>
-      <SubNav />
+      <div className="no-print">
+        <PageHeader title="Экспорт анамнеза" />
+      </div>
 
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '24px 16px' }}>
         {!userId && !loading && (

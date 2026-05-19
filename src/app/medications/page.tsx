@@ -6,8 +6,7 @@ import { ArrowLeft, Pill, Clock, Calendar, Plus, X, Loader2, AlertCircle, CheckC
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
-import ThemeToggle from '@/components/ThemeToggle';
-import SubNav from '@/components/SubNav';
+import PageHeader from '@/components/PageHeader';
 
 interface Medication {
   id: string;
@@ -105,31 +104,20 @@ export default function MedicationsPage() {
 
   return (
     <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
-      <header style={{
-        background: 'var(--s-surface)', borderBottom: '1px solid var(--s-border)',
-        padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-text-muted)', display: 'flex' }}>
-          <ArrowLeft size={20} />
-        </button>
-        <Pill size={22} color="var(--s-primary)" />
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>Лекарства</h1>
-        <ThemeToggle />
+      <PageHeader title="Лекарства" action={
         <button
           onClick={() => { setShowForm(!showForm); resetForm(); }}
           style={{
             background: showForm ? 'var(--s-surface-2)' : 'var(--s-primary)',
             color: showForm ? 'var(--s-text-muted)' : '#fff',
-            border: 'none', borderRadius: '8px', padding: '8px 14px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+            border: 'none', borderRadius: '8px', padding: '7px 13px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
             fontWeight: 600, fontSize: '14px',
           }}
         >
           {showForm ? <><X size={16} /> Закрыть</> : <><Plus size={16} /> Добавить</>}
         </button>
-      </header>
-      <SubNav />
+      } />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
 

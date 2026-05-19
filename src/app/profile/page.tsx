@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, User, Heart, Check, Loader2, AlertCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import SubNav from '@/components/SubNav';
 
 interface ProfileForm {
   full_name: string; phone: string; birthdate: string; gender: string;
@@ -153,7 +152,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </header>
-      <SubNav />
 
       <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-5">
         {saved && (

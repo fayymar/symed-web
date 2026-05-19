@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronDown } from 'lucide-react';
-import SubNav from '@/components/SubNav';
 
 const FAQ = [
   {
@@ -65,7 +64,6 @@ export default function FaqPage() {
           <span className="font-semibold" style={{ color: 'var(--s-label)' }}>Частые вопросы</span>
         </div>
       </header>
-      <SubNav />
 
       <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-2">
         {FAQ.map((item, i) => (

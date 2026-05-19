@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ClipboardList, AlertTriangle, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { ClipboardList, AlertTriangle, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
-import ThemeToggle from '@/components/ThemeToggle';
-import SubNav from '@/components/SubNav';
+import PageHeader from '@/components/PageHeader';
 
 interface Consultation {
   id: string;
@@ -24,27 +23,21 @@ function parseSymptoms(raw: string): string {
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return trimmed;
   try {
     const parsed = JSON.parse(trimmed);
-    // format: {"text": "...", "history": [...]}
     if (parsed.text) return parsed.text;
-    // format: {"history": [{"question": null, "answer": "..."}]}
     if (Array.isArray(parsed.history) && parsed.history.length > 0) {
       const first = parsed.history.find((h: Record<string, unknown>) => !h.question) ?? parsed.history[0];
       if (first?.answer) return String(first.answer);
     }
-    // format: [{"question": null, "answer": "..."}]
     if (Array.isArray(parsed) && parsed.length > 0) {
       const first = parsed.find((h: Record<string, unknown>) => !h.question) ?? parsed[0];
       if (first?.answer) return String(first.answer);
     }
     return trimmed;
-  } catch {
-    return trimmed;
-  }
+  } catch { return trimmed; }
 }
 
 function formatDate(s: string) {
   if (!s) return '';
-  // Supabase may return "2024-01-15T10:30:00+00:00" — already has tz offset, don't append Z
   const normalized = (s.endsWith('Z') || s.includes('+') || /\d{2}:\d{2}$/.test(s.slice(-6))) ? s : s + 'Z';
   const d = new Date(normalized);
   if (isNaN(d.getTime())) return s;
@@ -86,30 +79,17 @@ export default function HistoryPage() {
 
   return (
     <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
-      <header style={{
-        background: 'var(--s-surface)', borderBottom: '1px solid var(--s-border)',
-        padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-text-muted)', display: 'flex' }}>
-          <ArrowLeft size={20} />
-        </button>
-        <ClipboardList size={22} color="var(--s-primary)" />
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, flex: 1 }}>История консультаций</h1>
-        <ThemeToggle />
-      </header>
-      <SubNav />
+      <PageHeader title="История консультаций" />
 
       <main style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }}>
         {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px', gap: '12px' }}>
             <Loader2 size={28} color="var(--s-primary)" style={{ animation: 'spin 1s linear infinite' }} />
             <p style={{ color: 'var(--s-text-muted)' }}>Загружаем историю…</p>
           </div>
         )}
-
         {!loading && items.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '16px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 20px', gap: '16px', textAlign: 'center' }}>
             <ClipboardList size={48} style={{ color: 'var(--s-text-muted)', opacity: 0.4 }} />
             <div>
               <p style={{ fontWeight: 600, marginBottom: '4px' }}>История пуста</p>
@@ -118,37 +98,27 @@ export default function HistoryPage() {
             <button onClick={() => router.push('/consultation')} style={{
               background: 'var(--s-primary)', color: '#fff', border: 'none',
               borderRadius: '20px', padding: '10px 24px', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-            }}>
-              Начать консультацию
-            </button>
+            }}>Начать консультацию</button>
           </div>
         )}
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {items.map(item => {
-            const sympText = parseSymptoms(item.symptoms_summary ?? item.symptoms ?? '');
-            return (
-              <div key={item.id} style={{
-                background: 'var(--s-surface)', borderRadius: '14px',
-                border: '1px solid var(--s-border)', padding: '16px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
-                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, flex: 1, lineHeight: '1.4' }}>
-                    {sympText}
-                  </p>
-                  <UrgencyBadge level={item.urgency_level} />
-                </div>
-                {item.recommended_doctor && (
-                  <p style={{ margin: '0 0 8px', fontSize: '14px', color: 'var(--s-primary)' }}>
-                    → {item.recommended_doctor}
-                  </p>
-                )}
-                <p style={{ margin: 0, fontSize: '12px', color: 'var(--s-text-muted)' }}>
-                  {formatDate(item.created_at)}
+          {items.map(item => (
+            <div key={item.id} style={{
+              background: 'var(--s-surface)', borderRadius: '14px',
+              border: '1px solid var(--s-border)', padding: '16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, flex: 1, lineHeight: '1.4' }}>
+                  {parseSymptoms(item.symptoms_summary ?? item.symptoms ?? '')}
                 </p>
+                <UrgencyBadge level={item.urgency_level} />
               </div>
-            );
-          })}
+              {item.recommended_doctor && (
+                <p style={{ margin: '0 0 8px', fontSize: '14px', color: 'var(--s-primary)' }}>→ {item.recommended_doctor}</p>
+              )}
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--s-text-muted)' }}>{formatDate(item.created_at)}</p>
+            </div>
+          ))}
         </div>
       </main>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
