@@ -230,11 +230,11 @@ export default function ExportPage() {
                       <div key={i} style={{ background: 'var(--s-surface)', borderRadius: '8px', padding: '12px' }}>
                         <div style={{ fontSize: '12px', color: 'var(--s-text-muted)', marginBottom: '6px' }}>{formatDate(String(e.created_at ?? ''))}</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '13px' }}>
-                          {e.temperature && <span>Температура: {String(e.temperature)}°C</span>}
-                          {e.blood_pressure_sys && e.blood_pressure_dia && <span>Давление: {String(e.blood_pressure_sys)}/{String(e.blood_pressure_dia)}</span>}
-                          {e.pulse && <span>Пульс: {String(e.pulse)}</span>}
-                          {e.weight && <span>Вес: {String(e.weight)} кг</span>}
-                          {e.mood && <span>Самочувствие: {String(e.mood)}</span>}
+                          {!!e.temperature && <span>Температура: {String(e.temperature)}°C</span>}
+                          {!!(e.blood_pressure_sys && e.blood_pressure_dia) && <span>Давление: {String(e.blood_pressure_sys)}/{String(e.blood_pressure_dia)}</span>}
+                          {!!e.pulse && <span>Пульс: {String(e.pulse)}</span>}
+                          {!!e.weight && <span>Вес: {String(e.weight)} кг</span>}
+                          {!!e.mood && <span>Самочувствие: {String(e.mood)}</span>}
                         </div>
                         {!!e.symptoms && <div style={{ fontSize: '13px', marginTop: '4px' }}>Симптомы: {String(e.symptoms)}</div>}
                         {!!e.notes && <div style={{ fontSize: '13px', marginTop: '4px', color: 'var(--s-text-muted)' }}>{String(e.notes)}</div>}
