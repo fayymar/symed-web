@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -54,9 +55,8 @@ export default function DiaryPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('symed_user_id');
-    if (stored) {
-      const id = parseInt(stored);
+    const id = auth.getUserId();
+    if (id !== null) {
       setUserId(id);
       loadEntries(id);
     } else {

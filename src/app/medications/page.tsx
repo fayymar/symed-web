@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Pill, Clock, Calendar, Plus, X, Loader2, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -51,9 +52,8 @@ export default function MedicationsPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('symed_user_id');
-    if (stored) {
-      const id = parseInt(stored);
+    const id = auth.getUserId();
+    if (id !== null) {
       setUserId(id);
       loadMeds(id);
     } else {

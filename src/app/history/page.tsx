@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ClipboardList, AlertTriangle, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -70,9 +71,8 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('symed_user_id');
-    if (!stored) { router.push('/auth'); return; }
-    const userId = parseInt(stored);
+    const userId = auth.getUserId();
+    if (!userId) { router.push('/auth'); return; }
     api.getConsultations(userId)
       .then(d => setItems(d.records ?? d.consultations ?? (Array.isArray(d) ? d : [])))
       .catch(() => {})

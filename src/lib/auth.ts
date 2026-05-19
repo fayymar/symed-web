@@ -21,11 +21,29 @@ export const auth = {
 
   setUser: (user: TelegramUser) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem('symed_user_id', String(user.id));
   },
 
   logout: () => {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('symed_user_id');
     window.location.href = '/';
+  },
+
+  getUserId: (): number | null => {
+    if (typeof window === 'undefined') return null;
+    // Try numeric key first (set by 6-digit code auth)
+    const numKey = localStorage.getItem('symed_user_id');
+    if (numKey) return parseInt(numKey);
+    // Fall back to full user object
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (user?.id) return user.id;
+      }
+    } catch {}
+    return null;
   },
 
   isLoggedIn: (): boolean => {
