@@ -23,6 +23,15 @@
   --s-orange:          #FF9500;
 
   --s-nav-bg:          rgba(245,245,247,0.82);
+
+  /* ── Aliases used by new pages ─────────────────── */
+  --s-primary:         #0071E3;
+  --s-primary-light:   #E8F1FB;
+  --s-text:            #1D1D1F;
+  --s-text-secondary:  #6E6E73;
+  --s-text-muted:      #8E8E93;
+  --s-border:          #D2D2D7;
+  --s-fill:            #E5E5EA;
 }
 
 /* ── Dark mode ──────────────────────────────────── */
@@ -47,6 +56,15 @@
   --s-orange:          #FF9F0A;
 
   --s-nav-bg:          rgba(28,28,30,0.82);
+
+  /* ── Aliases ────────────────────────────────────── */
+  --s-primary:         #0A84FF;
+  --s-primary-light:   #0A84FF1A;
+  --s-text:            #FFFFFF;
+  --s-text-secondary:  #EBEBF599;
+  --s-text-muted:      #EBEBF54D;
+  --s-border:          #38383A;
+  --s-fill:            #3A3A3C;
 }
 
 /* ── Base ───────────────────────────────────────── */

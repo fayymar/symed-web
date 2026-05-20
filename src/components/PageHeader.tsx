@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import SymedLogo from '@/components/SymedLogo';
 
 const NAV_ITEMS = [
   { label: 'История',   href: '/history' },
@@ -30,7 +31,8 @@ export default function PageHeader({ action }: PageHeaderProps) {
         .symed-nav-scroll { scrollbar-width: none; }
         .symed-nav-scroll::-webkit-scrollbar { display: none; }
         .symed-nav-link:hover { color: var(--s-text) !important; }
-        .symed-consult-btn:hover { opacity: 0.85; }
+        .symed-consult-btn:hover { opacity: 0.82; }
+        .symed-back-btn:hover { opacity: 0.65; }
       `}</style>
       <header style={{
         position: 'sticky',
@@ -47,36 +49,39 @@ export default function PageHeader({ action }: PageHeaderProps) {
         gap: '8px',
       }}>
 
-        {/* Back arrow — left */}
+        {/* Back arrow */}
         <button
+          className="symed-back-btn"
           onClick={() => router.push('/dashboard')}
           title="На главную"
           style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--s-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '4px',
-            borderRadius: '6px',
-            flexShrink: 0,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--s-primary)', display: 'flex', alignItems: 'center',
+            padding: '4px', borderRadius: '6px', flexShrink: 0,
+            transition: 'opacity 0.15s',
           }}
         >
           <ArrowLeft size={18} strokeWidth={2.5} />
+        </button>
+
+        {/* Logo */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '0', flexShrink: 0, display: 'flex', alignItems: 'center',
+          }}
+        >
+          <SymedLogo size={26} />
         </button>
 
         {/* Nav items — center, scrollable */}
         <nav
           className="symed-nav-scroll"
           style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0',
-            overflowX: 'auto',
-            padding: '0 4px',
+            flex: 1, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: '0',
+            overflowX: 'auto', padding: '0 4px',
           }}
         >
           {NAV_ITEMS.map(({ label, href }) => {
@@ -87,15 +92,11 @@ export default function PageHeader({ action }: PageHeaderProps) {
                 className="symed-nav-link"
                 onClick={() => router.push(href)}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px 9px',
-                  fontSize: '13px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '4px 9px', fontSize: '13px',
                   fontWeight: active ? 700 : 400,
                   color: active ? 'var(--s-text)' : 'var(--s-text-secondary)',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
+                  whiteSpace: 'nowrap', flexShrink: 0,
                   letterSpacing: active ? '-0.2px' : '0',
                   transition: 'color 0.15s',
                 }}
@@ -106,7 +107,7 @@ export default function PageHeader({ action }: PageHeaderProps) {
           })}
         </nav>
 
-        {/* Right: ThemeToggle + консультация + optional action */}
+        {/* Right: ThemeToggle + Консультация + optional action */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <ThemeToggle />
           <button
@@ -123,6 +124,7 @@ export default function PageHeader({ action }: PageHeaderProps) {
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               transition: 'opacity 0.15s',
+              lineHeight: '1.4',
             }}
           >
             Консультация

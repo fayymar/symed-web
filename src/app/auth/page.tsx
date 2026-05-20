@@ -30,7 +30,7 @@ export default function AuthPage() {
     setCode(newCode);
     codeRef.current = newCode;
     api.requestAuthCode(newCode)
-      .then(() => setTimeout(() => setStatus('waiting'), 1500))
+      .then(() => setTimeout(() => setStatus('waiting'), 8000))
       .catch(() => setErrorMsg('Не удалось связаться с сервером. Обновите страницу.'));
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router]);
