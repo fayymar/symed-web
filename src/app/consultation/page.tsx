@@ -14,13 +14,7 @@ export default function SymptomsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!auth.isLoggedIn()) {
-      router.push('/auth');
-      return;
-    }
-    reset();
-  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { reset(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async () => {
     if (text.trim().length < 5) { setError('Опишите симптомы подробнее'); return; }
