@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Heart, Check, Loader2, AlertCircle } from 'lucide-react';
+import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
@@ -49,127 +49,37 @@ function hasChip(current: string, chip: string): boolean {
 }
 
 function Chips({ suggestions, value, onChange }: { suggestions: string[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-      {suggestions.map(chip => {
-        const active = hasChip(value, chip);
-        return (
-          <button key={chip} type="button" onClick={() => onChange(toggleChip(value, chip))}
-            style={{
-              fontSize: '12px', padding: '6px 12px', borderRadius: '999px',
-              fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-              background: active ? 'var(--s-primary)' : 'var(--s-fill)',
-              color: active ? '#fff' : 'var(--s-text-secondary)',
-              border: active ? '1px solid var(--s-primary)' : '1px solid var(--s-border)',
-              transition: 'all 0.15s',
-            }}>
-            {active && <Check size={10} strokeWidth={3} />}{chip}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
-export default function ProfilePage() {
-  const router = useRouter();
-  const { theme } = useTheme();
-  const [form, setForm] = useState<ProfileForm>(empty);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
-    const user = auth.getUser()!;
-    api.getProfile(user.id).then((data) => {
-      if (data.exists && data.profile) {
-        const p = data.profile;
-        setForm({
-          full_name: p.full_name || '', phone: p.phone || '',
-          birthdate: p.birthdate ? p.birthdate.slice(0, 10) : '',
-          gender: p.gender || '',
-          height: p.height ? String(p.height) : '',
-          weight: p.weight ? String(p.weight) : '',
-          chronic_diseases: Array.isArray(p.chronic_diseases) ? p.chronic_diseases.join(', ') : (p.chronic_diseases || ''),
-          drug_allergies: p.drug_allergies || '', smoking: p.smoking || 'no',
-          hereditary: Array.isArray(p.hereditary) ? p.hereditary.join(', ') : (p.hereditary || ''),
-          physical_activity: p.physical_activity || '',
-        });
-      }
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [router]);
-
-  const set = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [key]: e.target.value }));
-  const setVal = (key: keyof ProfileForm) => (v: string) => setForm(f => ({ ...f, [key]: v }));
-
-  const handleSave = async () => {
-    if (!form.full_name.trim()) { setError('Укажите имя'); return; }
-    setError(''); setSaving(true);
+  async function handleLinkTelegram() {
+    const userId = auth.getUserId();
+    if (!userId) return;
+    setLinkLoading(true);
     try {
-      const user = auth.getUser()!;
-      await api.saveProfile(user.id, {
-        ...form,
-        height: form.height ? Number(form.height) : null,
-        weight: form.weight ? Number(form.weight) : null,
-        chronic_diseases: form.chronic_diseases ? form.chronic_diseases.split(',').map(s => s.trim()).filter(Boolean) : [],
-        hereditary: form.hereditary ? form.hereditary.split(',').map(s => s.trim()).filter(Boolean) : [],
+      const res  = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com'}/api/auth/link-request`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
       });
-      setSaved(true); setTimeout(() => setSaved(false), 3000);
-    } catch { setError('Ошибка сохранения.'); }
-    finally { setSaving(false); }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    background: 'var(--s-fill)',
-    color: 'var(--s-text)',
-    border: '1px solid var(--s-border)',
-    outline: 'none',
-    width: '100%',
-    padding: '12px 16px',
-    borderRadius: '12px',
-    fontSize: '14px',
-    boxSizing: 'border-box',
-  };
-
-  const saveBtn = (
-    <button
-      onClick={handleSave}
-      disabled={saving}
-      style={{
-        background: 'var(--s-primary)',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '999px',
-        padding: '6px 16px',
-        fontSize: '14px',
-        fontWeight: 600,
-        cursor: saving ? 'not-allowed' : 'pointer',
-        opacity: saving ? 0.5 : 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {saving && <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />}
-      {saving ? 'Сохранение...' : 'Сохранить'}
-    </button>
-  );
-
-  if (loading) return (
-    <div data-theme={theme} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s-bg)' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-        <div style={{ width: '48px', height: '48px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s-primary-light)' }}>
-          <User size={22} style={{ color: 'var(--s-primary)' }} />
-        </div>
-        <Loader2 size={20} style={{ color: 'var(--s-primary)', animation: 'spin 1s linear infinite' }} />
-        <p style={{ color: 'var(--s-text-secondary)' }}>Загружаем профиль...</p>
-      </div>
-    </div>
-  );
+      const data = await res.json();
+      if (!data.code) throw new Error('No code');
+      setLinkCode(data.code);
+      setLinkStatus('waiting');
+      // Poll for completion
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com'}/api/auth/link-status/${data.code}`);
+          const s = await r.json();
+          if (s.verified) {
+            clearInterval(poll);
+            setLinkStatus('linked');
+          }
+        } catch (_) {}
+      }, 3000);
+      setLinkPollRef(poll);
+    } catch (e) {
+      console.error('Link error:', e);
+    }
+    setLinkLoading(false);
+  }
 
   return (
     <div data-theme={theme} style={{ minHeight: '100vh', background: 'var(--s-bg)', color: 'var(--s-text)' }}>
@@ -287,6 +197,58 @@ export default function ProfilePage() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* ── Telegram linking ── */}
+        <section style={{ borderRadius: '20px', padding: '20px', background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <MessageCircle size={18} style={{ color: 'var(--s-primary)' }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--s-text)' }}>Подключить Telegram</span>
+          </div>
+
+          {linkStatus === 'idle' && (
+            <>
+              <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', marginBottom: 14, lineHeight: 1.5 }}>
+                Свяжите ваш Telegram-аккаунт, чтобы данные профиля и история консультаций были общими в боте и на сайте.
+              </p>
+              <button onClick={handleLinkTelegram} disabled={linkLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px',
+                  borderRadius: 12, border: '1.5px solid var(--s-primary)', background: 'transparent',
+                  color: 'var(--s-primary)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                {linkLoading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Link2 size={16} />}
+                Получить код привязки
+              </button>
+            </>
+          )}
+
+          {linkStatus === 'waiting' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', lineHeight: 1.5 }}>
+                Отправьте эту команду боту <a href="https://t.me/medgg_bot" target="_blank" style={{ color: 'var(--s-primary)' }}>@medgg_bot</a>:
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--s-fill)', borderRadius: 12, padding: '12px 16px' }}>
+                <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: 3, color: 'var(--s-text)', flex: 1 }}>
+                  /link {linkCode}
+                </code>
+                <button onClick={() => navigator.clipboard.writeText(`/link ${linkCode}`)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-primary)' }}>
+                  <Check size={16} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--s-text-secondary)', fontSize: 13 }}>
+                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--s-primary)' }} />
+                Ожидаем подтверждения от бота…
+              </div>
+            </div>
+          )}
+
+          {linkStatus === 'linked' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#34c759' }}>
+              <CheckCircle2 size={20} />
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Telegram успешно привязан! Данные синхронизированы.</span>
+            </div>
+          )}
         </section>
 
         <button onClick={handleSave} disabled={saving}
