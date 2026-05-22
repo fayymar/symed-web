@@ -8,26 +8,28 @@ import { auth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
 
-/** SHA-256 → same algorithm as server: int(sha256(seed)[:12], 16) % range + offset */
-async function deriveUserId(supabaseUuid: string): Promise<number> {
-  const enc  = new TextEncoder().encode(supabaseUuid);
-  const buf  = await crypto.subtle.digest('SHA-256', enc);
-  const hex  = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  const h    = parseInt(hex.slice(0, 12), 16);
+/** SHA-256 → same algo as Python server */
+async function deriveUserId(uuid: string): Promise<number> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
+  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const h   = parseInt(hex.slice(0, 12), 16);
   return 5_000_000_000 + (h % 4_999_999_999);
 }
 
-async function fetchWithTimeout(url: string, opts: RequestInit, ms = 40000): Promise<Response> {
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
-  finally { clearTimeout(timer); }
+/** Fire-and-forget backend sync — runs after user is already logged in */
+async function syncWithBackend(provider: string, email: string, fullName: string, supabaseId: string, avatar: string | null) {
+  try {
+    await fetch(`${API_BASE}/api/auth/social`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ provider, email, name: fullName, provider_id: supabaseId, avatar }),
+    });
+  } catch (_) { /* backend unavailable — will sync next login */ }
 }
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [error,  setError]  = useState('');
-  const [status, setStatus] = useState('Обрабатываем авторизацию…');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!supabase) { setError('Supabase not configured'); return; }
@@ -39,16 +41,14 @@ export default function AuthCallbackPage() {
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
 
-        // 2. PKCE: exchange code → session
+        // 2. PKCE code exchange
         const code = params.get('code');
         if (code) {
-          setStatus('Обмениваем код сессии…');
           const { error: exchErr } = await supabase!.auth.exchangeCodeForSession(code);
           if (exchErr) throw exchErr;
         }
 
         // 3. Get session
-        setStatus('Получаем сессию…');
         let { data: { session } } = await supabase!.auth.getSession();
 
         if (!session && window.location.hash) {
@@ -67,40 +67,16 @@ export default function AuthCallbackPage() {
         const provider = user.app_metadata?.provider ?? 'google';
         const avatar   = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
 
-        // 4. Derive stable ID using SAME SHA-256 algorithm as server
-        setStatus('Создаём профиль…');
-        const localId = await deriveUserId(user.id);
+        // 4. Derive user ID via SHA-256 (same as server) — instant, no network
+        const userId    = await deriveUserId(user.id);
+        const firstName = fullName.split(' ')[0] || fullName;
+        const lastName  = fullName.split(' ').slice(1).join(' ') || '';
 
-        let userId    = localId;
-        let firstName = fullName.split(' ')[0] || fullName;
-        let lastName  = fullName.split(' ').slice(1).join(' ') || '';
-        let isNew     = false;
+        // 5. Check if this is a known user (already has profile in localStorage with same ID)
+        const existingId = auth.getUserId();
+        const isReturning = existingId === userId;
 
-        // 5. Call backend (40s timeout for Render cold start)
-        try {
-          const res = await fetchWithTimeout(
-            `${API_BASE}/api/auth/social`,
-            {
-              method:  'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body:    JSON.stringify({ provider, email, name: fullName, provider_id: user.id, avatar }),
-            },
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data.id) {
-              userId    = data.id;      // server ID always wins (same algo, same value)
-              firstName = data.first_name ?? firstName;
-              lastName  = data.last_name  ?? lastName;
-              isNew     = Boolean(data.is_new);
-            }
-          }
-        } catch (_) {
-          // Backend unavailable — localId uses same SHA-256 algo, so IDs will match when backend wakes
-          // Treat as returning user (if truly new, onboarding will still be accessible via profile)
-          isNew = false;
-        }
-
+        // 6. Log user in IMMEDIATELY — no waiting for backend
         auth.setUser({
           id:         userId,
           first_name: firstName,
@@ -111,7 +87,11 @@ export default function AuthCallbackPage() {
           hash:       '',
         });
 
-        router.push(isNew ? '/onboarding' : '/dashboard');
+        // 7. Sync profile with backend in the background (non-blocking)
+        syncWithBackend(provider, email, fullName, user.id, avatar);
+
+        // 8. Redirect: new users → onboarding, returning → dashboard
+        router.push(isReturning ? '/dashboard' : '/onboarding');
       } catch (e: any) {
         console.error('OAuth callback error:', e);
         setError(e?.message ?? 'Неизвестная ошибка авторизации');
@@ -136,7 +116,7 @@ export default function AuthCallbackPage() {
       ) : (
         <div style={{ textAlign: 'center', color: 'var(--s-text-secondary)' }}>
           <Loader2 size={32} style={{ color: 'var(--s-primary)', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-          <p>{status}</p>
+          <p>Входим в Symed…</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
