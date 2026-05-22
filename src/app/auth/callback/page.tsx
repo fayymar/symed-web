@@ -8,15 +8,20 @@ import { auth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
 
-// Fetch with timeout — Render.com free tier can take 30-50s to wake up
+/** SHA-256 → same algorithm as server: int(sha256(seed)[:12], 16) % range + offset */
+async function deriveUserId(supabaseUuid: string): Promise<number> {
+  const enc  = new TextEncoder().encode(supabaseUuid);
+  const buf  = await crypto.subtle.digest('SHA-256', enc);
+  const hex  = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const h    = parseInt(hex.slice(0, 12), 16);
+  return 5_000_000_000 + (h % 4_999_999_999);
+}
+
 async function fetchWithTimeout(url: string, opts: RequestInit, ms = 40000): Promise<Response> {
-  const ctrl = new AbortController();
+  const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...opts, signal: ctrl.signal });
-  } finally {
-    clearTimeout(timer);
-  }
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  finally { clearTimeout(timer); }
 }
 
 export default function AuthCallbackPage() {
@@ -29,7 +34,7 @@ export default function AuthCallbackPage() {
 
     async function handleCallback() {
       try {
-        // 1. Check for OAuth errors in URL
+        // 1. Check for OAuth errors
         const params   = new URLSearchParams(window.location.search);
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
@@ -42,7 +47,7 @@ export default function AuthCallbackPage() {
           if (exchErr) throw exchErr;
         }
 
-        // 3. Get session (PKCE or implicit/hash flow)
+        // 3. Get session
         setStatus('Получаем сессию…');
         let { data: { session } } = await supabase!.auth.getSession();
 
@@ -51,10 +56,9 @@ export default function AuthCallbackPage() {
             const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
               if (s) { subscription.unsubscribe(); resolve(s); }
             });
-            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Timeout ожидания сессии')); }, 10000);
+            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Timeout сессии')); }, 10000);
           });
         }
-
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
         const { user } = session;
@@ -63,22 +67,16 @@ export default function AuthCallbackPage() {
         const provider = user.app_metadata?.provider ?? 'google';
         const avatar   = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
 
-        // 4. Derive stable local ID from Supabase UUID (used if backend is unavailable)
-        let localId = 0;
-        for (let i = 0; i < user.id.length; i++) localId = (localId * 31 + user.id.charCodeAt(i)) >>> 0;
-        localId = 5_000_000_000 + (localId % 4_999_999_999);
-
-        // 5. Check if already logged in with the same derived ID (returning user without backend)
-        const existingId = auth.getUserId();
-        const alreadyKnown = existingId === localId;
-
-        // 6. Try backend — with generous timeout for Render cold start
+        // 4. Derive stable ID using SAME SHA-256 algorithm as server
         setStatus('Создаём профиль…');
+        const localId = await deriveUserId(user.id);
+
         let userId    = localId;
         let firstName = fullName.split(' ')[0] || fullName;
         let lastName  = fullName.split(' ').slice(1).join(' ') || '';
-        let isNew     = false; // default: treat as returning user
+        let isNew     = false;
 
+        // 5. Call backend (40s timeout for Render cold start)
         try {
           const res = await fetchWithTimeout(
             `${API_BASE}/api/auth/social`,
@@ -87,20 +85,19 @@ export default function AuthCallbackPage() {
               headers: { 'Content-Type': 'application/json' },
               body:    JSON.stringify({ provider, email, name: fullName, provider_id: user.id, avatar }),
             },
-            40000, // 40s timeout for cold start
           );
           if (res.ok) {
             const data = await res.json();
             if (data.id) {
-              userId    = data.id;
+              userId    = data.id;      // server ID always wins (same algo, same value)
               firstName = data.first_name ?? firstName;
               lastName  = data.last_name  ?? lastName;
               isNew     = Boolean(data.is_new);
             }
           }
         } catch (_) {
-          // Backend unavailable — use local ID, assume returning user
-          // (If truly new, they'll just see an empty profile they can fill in)
+          // Backend unavailable — localId uses same SHA-256 algo, so IDs will match when backend wakes
+          // Treat as returning user (if truly new, onboarding will still be accessible via profile)
           isNew = false;
         }
 
@@ -114,7 +111,6 @@ export default function AuthCallbackPage() {
           hash:       '',
         });
 
-        // New users → onboarding; returning → dashboard
         router.push(isNew ? '/onboarding' : '/dashboard');
       } catch (e: any) {
         console.error('OAuth callback error:', e);
