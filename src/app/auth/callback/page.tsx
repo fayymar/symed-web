@@ -15,24 +15,44 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     if (!supabase) { setError('Supabase not configured'); return; }
 
-    supabase.auth.getSession().then(async ({ data: { session }, error: err }) => {
-      if (err || !session) {
-        setError(err?.message ?? 'Auth failed');
-        return;
-      }
-
-      const { user } = session;
-      const email    = user.email ?? '';
-      const name     = user.user_metadata?.full_name ?? user.user_metadata?.name ?? email.split('@')[0];
-      const provider = user.app_metadata?.provider ?? 'email';
-      const avatar   = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
-
-      // Register / find user on our backend
+    async function handleCallback() {
       try {
+        // PKCE flow: exchange the `code` query param for a session
+        const params = new URLSearchParams(window.location.search);
+        const code   = params.get('code');
+
+        if (code) {
+          const { error: exchErr } = await supabase!.auth.exchangeCodeForSession(code);
+          if (exchErr) throw exchErr;
+        }
+
+        // Now fetch the session (also covers implicit / hash flow)
+        let { data: { session }, error: sessErr } = await supabase!.auth.getSession();
+        if (sessErr) throw sessErr;
+
+        // If still no session, wait for onAuthStateChange (hash-based flow)
+        if (!session) {
+          session = await new Promise((resolve, reject) => {
+            const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, s) => {
+              if (s) { subscription.unsubscribe(); resolve(s); }
+            });
+            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Session timeout')); }, 10000);
+          });
+        }
+
+        if (!session) throw new Error('No session after exchange');
+
+        const { user }  = session;
+        const email     = user.email ?? '';
+        const name      = user.user_metadata?.full_name ?? user.user_metadata?.name ?? email.split('@')[0];
+        const provider  = user.app_metadata?.provider ?? 'email';
+        const avatar    = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
+
+        // Register / find user on our backend
         const res  = await fetch(`${API_BASE}/api/auth/social`, {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider, email, name, provider_id: user.id, avatar }),
+          body:    JSON.stringify({ provider, email, name, provider_id: user.id, avatar }),
         });
         const data = await res.json();
         if (!data.id) throw new Error('No user id returned');
@@ -48,10 +68,13 @@ export default function AuthCallbackPage() {
         });
 
         router.push('/dashboard');
-      } catch (e) {
-        setError('Ошибка при создании профиля. Попробуйте ещё раз.');
+      } catch (e: any) {
+        console.error('Auth callback error:', e);
+        setError(e?.message ?? 'Ошибка авторизации. Попробуйте ещё раз.');
       }
-    });
+    }
+
+    handleCallback();
   }, [router]);
 
   return (
