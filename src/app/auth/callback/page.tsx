@@ -18,13 +18,9 @@ export default function AuthCallbackPage() {
 
     async function handleCallback() {
       try {
-        // 1. Try PKCE: exchange code query param
-        const search = window.location.search;
-        const hash   = window.location.hash;
-        const params = new URLSearchParams(search);
-        const code   = params.get('code');
-
-        // Check for OAuth error in URL
+        // 1. PKCE: exchange code query param
+        const params  = new URLSearchParams(window.location.search);
+        const code    = params.get('code');
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
 
@@ -34,12 +30,12 @@ export default function AuthCallbackPage() {
           if (exchErr) throw exchErr;
         }
 
-        // 2. Get session (PKCE or implicit)
+        // 2. Get session
         setStatus('Получаем сессию…');
         let { data: { session } } = await supabase!.auth.getSession();
 
-        // 3. Fallback: wait for onAuthStateChange (implicit / hash flow)
-        if (!session && hash) {
+        // Fallback: implicit / hash flow
+        if (!session && window.location.hash) {
           session = await new Promise((resolve, reject) => {
             const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
               if (s) { subscription.unsubscribe(); resolve(s); }
@@ -56,14 +52,15 @@ export default function AuthCallbackPage() {
         const provider = user.app_metadata?.provider ?? 'google';
         const avatar   = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
 
-        // 4. Try backend, fall back to local user creation
+        // 3. Backend: register / find user
         setStatus('Создаём профиль…');
         let userId: number | null = null;
-        let firstName = fullName;
-        let lastName  = '';
+        let firstName = fullName.split(' ')[0] || fullName;
+        let lastName  = fullName.split(' ').slice(1).join(' ') || '';
+        let isNew     = false;
 
         try {
-          const res  = await fetch(`${API_BASE}/api/auth/social`, {
+          const res = await fetch(`${API_BASE}/api/auth/social`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({ provider, email, name: fullName, provider_id: user.id, avatar }),
@@ -72,33 +69,33 @@ export default function AuthCallbackPage() {
             const data = await res.json();
             if (data.id) {
               userId    = data.id;
-              firstName = data.first_name ?? fullName;
-              lastName  = data.last_name  ?? '';
+              firstName = data.first_name ?? firstName;
+              lastName  = data.last_name  ?? lastName;
+              isNew     = Boolean(data.is_new);
             }
           }
-        } catch (_) {
-          // backend unavailable — create local ID from Supabase UUID
-        }
+        } catch (_) { /* backend unavailable */ }
 
-        // Fallback: derive stable numeric ID from Supabase user.id (UUID)
+        // Fallback: derive stable ID locally
         if (!userId) {
           let hash = 0;
           for (let i = 0; i < user.id.length; i++) hash = (hash * 31 + user.id.charCodeAt(i)) >>> 0;
           userId = 5_000_000_000 + (hash % 4_999_999_999);
+          isNew  = true; // can't confirm from backend, treat as new
         }
 
-        const nameParts = fullName.split(' ');
         auth.setUser({
           id:         userId,
-          first_name: nameParts[0] || firstName,
-          last_name:  nameParts[1] ?? lastName ?? undefined,
+          first_name: firstName,
+          last_name:  lastName || undefined,
           username:   email.split('@')[0],
           photo_url:  avatar,
           auth_date:  Math.floor(Date.now() / 1000),
           hash:       '',
         });
 
-        router.push('/dashboard');
+        // New users → onboarding; returning users → dashboard
+        router.push(isNew ? '/onboarding' : '/dashboard');
       } catch (e: any) {
         console.error('OAuth callback error:', e);
         setError(e?.message ?? 'Неизвестная ошибка авторизации');
