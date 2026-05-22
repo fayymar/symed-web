@@ -8,9 +8,20 @@ import { auth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
 
+// Fetch with timeout — Render.com free tier can take 30-50s to wake up
+async function fetchWithTimeout(url: string, opts: RequestInit, ms = 40000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [error, setError]   = useState('');
+  const [error,  setError]  = useState('');
   const [status, setStatus] = useState('Обрабатываем авторизацию…');
 
   useEffect(() => {
@@ -18,23 +29,23 @@ export default function AuthCallbackPage() {
 
     async function handleCallback() {
       try {
-        // 1. PKCE: exchange code query param
-        const params  = new URLSearchParams(window.location.search);
-        const code    = params.get('code');
+        // 1. Check for OAuth errors in URL
+        const params   = new URLSearchParams(window.location.search);
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
 
+        // 2. PKCE: exchange code → session
+        const code = params.get('code');
         if (code) {
           setStatus('Обмениваем код сессии…');
           const { error: exchErr } = await supabase!.auth.exchangeCodeForSession(code);
           if (exchErr) throw exchErr;
         }
 
-        // 2. Get session
+        // 3. Get session (PKCE or implicit/hash flow)
         setStatus('Получаем сессию…');
         let { data: { session } } = await supabase!.auth.getSession();
 
-        // Fallback: implicit / hash flow
         if (!session && window.location.hash) {
           session = await new Promise((resolve, reject) => {
             const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
@@ -52,19 +63,32 @@ export default function AuthCallbackPage() {
         const provider = user.app_metadata?.provider ?? 'google';
         const avatar   = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
 
-        // 3. Backend: register / find user
+        // 4. Derive stable local ID from Supabase UUID (used if backend is unavailable)
+        let localId = 0;
+        for (let i = 0; i < user.id.length; i++) localId = (localId * 31 + user.id.charCodeAt(i)) >>> 0;
+        localId = 5_000_000_000 + (localId % 4_999_999_999);
+
+        // 5. Check if already logged in with the same derived ID (returning user without backend)
+        const existingId = auth.getUserId();
+        const alreadyKnown = existingId === localId;
+
+        // 6. Try backend — with generous timeout for Render cold start
         setStatus('Создаём профиль…');
-        let userId: number | null = null;
+        let userId    = localId;
         let firstName = fullName.split(' ')[0] || fullName;
         let lastName  = fullName.split(' ').slice(1).join(' ') || '';
-        let isNew     = false;
+        let isNew     = false; // default: treat as returning user
 
         try {
-          const res = await fetch(`${API_BASE}/api/auth/social`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ provider, email, name: fullName, provider_id: user.id, avatar }),
-          });
+          const res = await fetchWithTimeout(
+            `${API_BASE}/api/auth/social`,
+            {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body:    JSON.stringify({ provider, email, name: fullName, provider_id: user.id, avatar }),
+            },
+            40000, // 40s timeout for cold start
+          );
           if (res.ok) {
             const data = await res.json();
             if (data.id) {
@@ -74,14 +98,10 @@ export default function AuthCallbackPage() {
               isNew     = Boolean(data.is_new);
             }
           }
-        } catch (_) { /* backend unavailable */ }
-
-        // Fallback: derive stable ID locally
-        if (!userId) {
-          let hash = 0;
-          for (let i = 0; i < user.id.length; i++) hash = (hash * 31 + user.id.charCodeAt(i)) >>> 0;
-          userId = 5_000_000_000 + (hash % 4_999_999_999);
-          isNew  = true; // can't confirm from backend, treat as new
+        } catch (_) {
+          // Backend unavailable — use local ID, assume returning user
+          // (If truly new, they'll just see an empty profile they can fill in)
+          isNew = false;
         }
 
         auth.setUser({
@@ -94,7 +114,7 @@ export default function AuthCallbackPage() {
           hash:       '',
         });
 
-        // New users → onboarding; returning users → dashboard
+        // New users → onboarding; returning → dashboard
         router.push(isNew ? '/onboarding' : '/dashboard');
       } catch (e: any) {
         console.error('OAuth callback error:', e);
@@ -121,6 +141,7 @@ export default function AuthCallbackPage() {
         <div style={{ textAlign: 'center', color: 'var(--s-text-secondary)' }}>
           <Loader2 size={32} style={{ color: 'var(--s-primary)', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
           <p>{status}</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
     </main>
