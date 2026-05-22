@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { auth } from '@/lib/auth';
 
@@ -10,109 +11,101 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot
 async function deriveUserId(uuid: string): Promise<number> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
   const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  const h   = parseInt(hex.slice(0, 12), 16);
-  return 5_000_000_000 + (h % 4_999_999_999);
+  return 5_000_000_000 + (parseInt(hex.slice(0, 12), 16) % 4_999_999_999);
+}
+
+async function syncWithBackend(provider: string, email: string, fullName: string, supabaseId: string, avatar: string | null) {
+  try {
+    await fetch(`${API_BASE}/api/auth/social`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, email, name: fullName, provider_id: supabaseId, avatar }),
+    });
+  } catch (_) {}
 }
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [logs, setLogs]   = useState<string[]>([]);
-  const [done, setDone]   = useState(false);
   const [error, setError] = useState('');
 
-  const log = (msg: string) => {
-    console.log('[callback]', msg);
-    setLogs(prev => [...prev, msg]);
-  };
-
   useEffect(() => {
+    if (!supabase) { setError('Supabase not configured'); return; }
+
     async function run() {
-      log('▶ Начало');
+      try {
+        const params   = new URLSearchParams(window.location.search);
+        const urlError = params.get('error_description') || params.get('error');
+        if (urlError) throw new Error(urlError);
 
-      if (!supabase) { setError('❌ supabase = null (env vars не настроены)'); return; }
-      log('✓ Supabase клиент OK');
+        // PKCE exchange
+        const code = params.get('code');
+        if (code) {
+          const { error: e } = await supabase!.auth.exchangeCodeForSession(code);
+          if (e) throw e;
+        }
 
-      const params   = new URLSearchParams(window.location.search);
-      const urlError = params.get('error_description') || params.get('error');
-      if (urlError) { setError('❌ OAuth error: ' + urlError); return; }
+        // Get session
+        let { data: { session } } = await supabase!.auth.getSession();
 
-      const code = params.get('code');
-      log(code ? `✓ code получен: ${code.slice(0,8)}…` : '⚠ code отсутствует (проверяем hash)');
-
-      if (code) {
-        log('… exchangeCodeForSession');
-        const { error: exchErr } = await supabase!.auth.exchangeCodeForSession(code);
-        if (exchErr) { setError('❌ exchangeCodeForSession: ' + exchErr.message); return; }
-        log('✓ exchange OK');
-      }
-
-      log('… getSession');
-      let { data: { session } } = await supabase!.auth.getSession();
-
-      if (!session && window.location.hash) {
-        log('… hash flow — ждём onAuthStateChange');
-        session = await new Promise((resolve, reject) => {
-          const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
-            if (s) { subscription.unsubscribe(); resolve(s); }
+        if (!session && window.location.hash) {
+          session = await new Promise((resolve, reject) => {
+            const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
+              if (s) { subscription.unsubscribe(); resolve(s); }
+            });
+            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Timeout')); }, 8000);
           });
-          setTimeout(() => { subscription.unsubscribe(); reject(new Error('timeout 10s')); }, 10000);
-        }).catch(e => { log('❌ ' + e.message); return null; }) as any;
+        }
+        if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
+
+        const { user }  = session;
+        const email     = user.email ?? '';
+        const fullName  = user.user_metadata?.full_name ?? user.user_metadata?.name ?? email.split('@')[0];
+        const provider  = user.app_metadata?.provider ?? 'google';
+        const avatar    = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
+        const userId    = await deriveUserId(user.id);
+        const isNew     = auth.getUserId() !== userId;
+
+        auth.setUser({
+          id:         userId,
+          first_name: fullName.split(' ')[0] || fullName,
+          last_name:  fullName.split(' ').slice(1).join(' ') || undefined,
+          username:   email.split('@')[0],
+          photo_url:  avatar,
+          auth_date:  Math.floor(Date.now() / 1000),
+          hash:       '',
+        });
+
+        // Sync with backend in background — don't block login
+        syncWithBackend(provider, email, fullName, user.id, avatar);
+
+        router.push(isNew ? '/onboarding' : '/dashboard');
+      } catch (e: any) {
+        setError(e?.message ?? 'Ошибка авторизации');
       }
-
-      if (!session) { setError('❌ Session null — попробуйте ещё раз'); return; }
-
-      const { user } = session;
-      log(`✓ session OK — user: ${user.email} (${user.id.slice(0,8)}…)`);
-
-      const userId = await deriveUserId(user.id);
-      log(`✓ userId = ${userId}`);
-
-      const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? (user.email ?? '').split('@')[0];
-      const firstName = fullName.split(' ')[0];
-      const lastName  = fullName.split(' ').slice(1).join(' ') || '';
-      const avatar    = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
-
-      auth.setUser({
-        id: userId, first_name: firstName, last_name: lastName || undefined,
-        username: (user.email ?? '').split('@')[0], photo_url: avatar,
-        auth_date: Math.floor(Date.now() / 1000), hash: '',
-      });
-      log('✓ auth.setUser() вызван');
-
-      const check = auth.isLoggedIn();
-      log(`✓ isLoggedIn() = ${check}`);
-      const storedId = auth.getUserId();
-      log(`✓ getUserId() = ${storedId}`);
-
-      if (!check) {
-        setError('❌ isLoggedIn() = false после setUser! Проблема с localStorage.');
-        return;
-      }
-
-      log('→ Редирект на /onboarding или /dashboard через 2 сек…');
-      setDone(true);
-      setTimeout(() => router.push('/onboarding'), 2000);
     }
 
-    run().catch(e => setError('❌ Необработанная ошибка: ' + e.message));
+    run();
   }, []);
 
   return (
-    <main style={{ minHeight: '100vh', background: '#000', color: '#0f0', fontFamily: 'monospace', fontSize: 13, padding: 24 }}>
-      <div style={{ marginBottom: 12, fontSize: 16, fontWeight: 700, color: '#fff' }}>
-        🔍 Auth Callback Debug
-      </div>
-      {logs.map((l, i) => <div key={i} style={{ marginBottom: 4 }}>{l}</div>)}
-      {error && (
-        <div style={{ marginTop: 16, padding: '12px 16px', background: '#ff3b3033', borderRadius: 8, color: '#ff6b6b', fontWeight: 600 }}>
-          {error}
-          <br /><br />
-          <button onClick={() => router.push('/auth')} style={{ color: '#0f0', background: 'none', border: '1px solid #0f0', padding: '6px 16px', borderRadius: 6, cursor: 'pointer' }}>
-            ← Назад
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s-bg)' }}>
+      {error ? (
+        <div style={{ textAlign: 'center', maxWidth: 360, padding: '0 24px' }}>
+          <AlertCircle size={32} style={{ color: '#ff3b30', margin: '0 auto 12px' }} />
+          <p style={{ fontWeight: 600, color: 'var(--s-text)', marginBottom: 8 }}>Ошибка авторизации</p>
+          <p style={{ color: 'var(--s-text-secondary)', fontSize: 14, marginBottom: 16 }}>{error}</p>
+          <button onClick={() => router.push('/auth')}
+            style={{ color: 'var(--s-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            ← Попробовать снова
           </button>
         </div>
+      ) : (
+        <div style={{ textAlign: 'center', color: 'var(--s-text-secondary)' }}>
+          <Loader2 size={32} style={{ color: 'var(--s-primary)', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <p>Входим в Symed…</p>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
       )}
-      {done && <div style={{ marginTop: 16, color: '#0f0', fontWeight: 700 }}>✅ Успех — редиректим…</div>}
     </main>
   );
 }
