@@ -222,23 +222,28 @@ function Chips({ suggestions, value, onChange }: { suggestions: string[]; value:
           )}
 
           {linkStatus === 'waiting' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', lineHeight: 1.5 }}>
-                Отправьте эту команду боту <a href="https://t.me/medgg_bot" target="_blank" style={{ color: 'var(--s-primary)' }}>@medgg_bot</a>:
+                Нажмите кнопку — откроется Telegram, бот автоматически выполнит привязку.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10,
-                background: 'var(--s-fill)', borderRadius: 12, padding: '12px 16px' }}>
-                <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: 3, color: 'var(--s-text)', flex: 1 }}>
-                  /link {linkCode}
-                </code>
-                <button onClick={() => navigator.clipboard.writeText(`/link ${linkCode}`)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--s-primary)' }}>
-                  <Check size={16} />
-                </button>
-              </div>
+              <a
+                href={`https://t.me/medgg_bot?start=link_${linkCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 10,
+                  padding: '13px 20px', borderRadius: 14,
+                  background: '#229ED9', color: '#fff',
+                  fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                  boxShadow: '0 2px 12px rgba(34,158,217,0.35)',
+                }}
+              >
+                <MessageCircle size={18} />
+                Привязать через Telegram
+              </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--s-text-secondary)', fontSize: 13 }}>
                 <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--s-primary)' }} />
-                Ожидаем подтверждения от бота…
+                Ожидаем подтверждения…
               </div>
             </div>
           )}
