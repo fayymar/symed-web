@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertTriangle, Clock, CheckCircle, ClipboardList, Users, ThumbsUp, ThumbsDown, CalendarPlus, ArrowRight } from 'lucide-react';
 import { auth } from '@/lib/auth';
+import { api } from '@/lib/api';
 import { useConsultation } from '@/context/ConsultationContext';
 
 interface UrgencyConfig {
@@ -32,7 +33,7 @@ function getUrgency(level: string): UrgencyConfig {
 
 export default function ResultPage() {
   const router = useRouter();
-  const { result } = useConsultation();
+  const { result, sessionId } = useConsultation();
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
   const [comingSoon, setComingSoon] = useState(false);
   const isLoggedIn = auth.isLoggedIn();
@@ -88,7 +89,7 @@ export default function ResultPage() {
               <h2 className="font-semibold" style={{ color: 'var(--s-label)' }}>Специалисты</h2>
             </div>
             <div className="flex flex-col gap-4">
-              {result.specialists.map((spec: { name: string; percentage: number }, i: number) => (
+              {result.specialists.map((spec: { name: string; percentage: number; reason: string }, i: number) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                     style={{ background: i === 0 ? 'var(--s-blue)' : i === 1 ? 'var(--s-secondary)' : 'var(--s-fill-secondary)', color: i > 1 ? 'var(--s-label)' : undefined }}>
@@ -102,6 +103,9 @@ export default function ResultPage() {
                     <div className="h-1.5 rounded-full" style={{ background: 'var(--s-fill-secondary)' }}>
                       <div className="h-1.5 rounded-full" style={{ width: `${spec.percentage}%`, background: 'var(--s-blue)' }} />
                     </div>
+                    {spec.reason && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--s-secondary)' }}>{spec.reason}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -144,12 +148,12 @@ export default function ResultPage() {
             <>
               <p className="text-sm mb-4" style={{ color: 'var(--s-secondary)' }}>Была ли рекомендация полезной?</p>
               <div className="flex gap-2 justify-center">
-                <button onClick={() => setFeedback('good')}
+                <button onClick={() => { setFeedback('good'); if (sessionId) api.saveFeedback(sessionId, 'good').catch(() => {}); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition"
                   style={{ background: 'rgba(52,199,89,0.1)', color: 'var(--s-green)', border: '1px solid rgba(52,199,89,0.25)' }}>
                   <ThumbsUp size={14} /> Помогло
                 </button>
-                <button onClick={() => setFeedback('bad')}
+                <button onClick={() => { setFeedback('bad'); if (sessionId) api.saveFeedback(sessionId, 'bad').catch(() => {}); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition"
                   style={{ background: 'rgba(255,59,48,0.08)', color: 'var(--s-red)', border: '1px solid rgba(255,59,48,0.2)' }}>
                   <ThumbsDown size={14} /> Не помогло

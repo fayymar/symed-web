@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 interface Specialist {
   name: string;
   percentage: number;
-  description: string;
+  reason: string;
 }
 
 interface ConsultationState {

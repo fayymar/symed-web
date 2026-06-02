@@ -94,4 +94,11 @@ export const api = {
 
   checkLinkStatus: (code: string) =>
     apiFetch(`${API_BASE}/api/auth/link-status/${code}`),
+
+  saveFeedback: (consultationId: string, rating: 'good' | 'bad') =>
+    apiFetch(`${API_BASE}/api/consultation/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ consultation_id: consultationId, rating }),
+    }),
 };
