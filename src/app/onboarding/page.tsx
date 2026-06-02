@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Loader2, ChevronRight, Ruler, Calendar, User, AlertCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import { api } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
 import SymedLogo from '@/components/SymedLogo';
 
