@@ -50,7 +50,17 @@ export const auth = {
     const user = auth.getUser();
     if (!user) return false;
     const age = Date.now() / 1000 - user.auth_date;
-    return age < 86400;
+    // 7 days for OAuth users (auth_date is set at login and refreshed on activity)
+    return age < 86400 * 7;
+  },
+
+  // Call on user activity to extend session
+  refreshSession: (): void => {
+    const user = auth.getUser();
+    if (user) {
+      user.auth_date = Math.floor(Date.now() / 1000);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
   },
 
   /**

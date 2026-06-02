@@ -1,8 +1,18 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://telegram-doctor-bot.onrender.com';
 
+async function apiFetch(url: string, options?: RequestInit) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { const j = await res.json(); msg = j.error || msg; } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export const api = {
   getProfile: (userId: number) =>
-    fetch(`${API_BASE}/api/profile/${userId}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/profile/${userId}`),
 
   saveProfile: (userId: number, data: object) =>
     fetch(`${API_BASE}/api/profile/${userId}`, {
@@ -40,10 +50,10 @@ export const api = {
     }).then(r => r.json()),
 
   getConsultations: (userId: number) =>
-    fetch(`${API_BASE}/api/consultations/${userId}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/consultations/${userId}`),
 
   getMedications: (userId: number) =>
-    fetch(`${API_BASE}/api/medications/${userId}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/medications/${userId}`),
 
   addMedication: (userId: number, data: object) =>
     fetch(`${API_BASE}/api/medications/${userId}`, {
@@ -53,7 +63,7 @@ export const api = {
     }).then(r => r.json()),
 
   getDiary: (userId: number) =>
-    fetch(`${API_BASE}/api/diary/${userId}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/diary/${userId}`),
 
   addDiaryEntry: (userId: number, data: object) =>
     fetch(`${API_BASE}/api/diary/${userId}`, {
@@ -73,5 +83,5 @@ export const api = {
     }).then(r => r.json()),
 
   checkAuthStatus: (code: string) =>
-    fetch(`${API_BASE}/api/auth/status/${code}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/auth/status/${code}`),
 };
