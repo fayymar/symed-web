@@ -5,30 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Loader2, ChevronRight, Ruler, Calendar, User, AlertCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
 import SymedLogo from '@/components/SymedLogo';
 
 type Step = 'name' | 'bio' | 'body';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
 
-async function saveWithRetry(userId: number, data: object, attempts = 3): Promise<void> {
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const res = await fetch(`${API_BASE}/api/profile/${userId}`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(data),
-      });
-      if (res.ok) return;
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error ?? `HTTP ${res.status}`);
-    } catch (e) {
-      if (i === attempts - 1) throw e;
-      await new Promise(r => setTimeout(r, 4000)); // wait 4s between retries
-    }
-  }
-}
 
 export default function OnboardingPage() {
   const router    = useRouter();
@@ -61,7 +44,7 @@ export default function OnboardingPage() {
     if (!userId) { router.push('/dashboard'); return; }
 
     try {
-      await saveWithRetry(userId, {
+      await api.saveProfile(userId, {
         full_name: fullName || undefined,
         birthdate: birthdate || null,
         gender:    gender    || null,

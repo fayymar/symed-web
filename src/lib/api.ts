@@ -84,4 +84,14 @@ export const api = {
 
   checkAuthStatus: (code: string) =>
     apiFetch(`${API_BASE}/api/auth/status/${code}`),
+
+  requestLinkCode: (userId: number) =>
+    apiFetch(`${API_BASE}/api/auth/link-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }),
+    }),
+
+  checkLinkStatus: (code: string) =>
+    apiFetch(`${API_BASE}/api/auth/link-status/${code}`),
 };

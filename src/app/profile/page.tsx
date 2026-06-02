@@ -66,8 +66,6 @@ function Chips({ suggestions, value, onChange }: { suggestions: string[]; value:
   );
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
-
 export default function ProfilePage() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -134,18 +132,13 @@ export default function ProfilePage() {
     if (!userId) return;
     setLinkLoading(true);
     try {
-      const res  = await fetch(`${API_BASE}/api/auth/link-request`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const data = await res.json();
+      const data = await api.requestLinkCode(userId);
       if (!data.code) throw new Error('No code');
       setLinkCode(data.code);
       setLinkStatus('waiting');
       const poll = setInterval(async () => {
         try {
-          const r = await fetch(`${API_BASE}/api/auth/link-status/${data.code}`);
-          const s = await r.json();
+          const s = await api.checkLinkStatus(data.code);
           if (s.verified) { clearInterval(poll); setLinkStatus('linked'); }
         } catch (_) {}
       }, 3000);

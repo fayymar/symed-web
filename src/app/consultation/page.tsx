@@ -29,7 +29,8 @@ export default function SymptomsPage() {
       ]);
 
       if (data.red_flag) {
-        router.push(`/consultation/emergency?msg=${encodeURIComponent(data.red_flag.text)}`);
+        // red_flag is a boolean from the server
+        router.push('/consultation/emergency');
         return;
       }
 
