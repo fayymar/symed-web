@@ -67,13 +67,14 @@ export default function HistoryPage() {
   const { theme } = useTheme();
   const [items, setItems] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     const userId = auth.getUserId();
     if (!userId) { router.push('/auth'); return; }
     api.getConsultations(userId)
       .then(d => setItems(d.records ?? d.consultations ?? (Array.isArray(d) ? d : [])))
-      .catch(() => {})
+      .catch((e) => { console.error('History fetch error:', e); setFetchError('Не удалось загрузить историю.'); })
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -88,7 +89,12 @@ export default function HistoryPage() {
             <p style={{ color: 'var(--s-text-muted)' }}>Загружаем историю…</p>
           </div>
         )}
-        {!loading && items.length === 0 && (
+        {fetchError && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--s-red)' }}>
+            {fetchError}
+          </div>
+        )}
+        {!loading && !fetchError && items.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 20px', gap: '16px', textAlign: 'center' }}>
             <ClipboardList size={48} style={{ color: 'var(--s-text-muted)', opacity: 0.4 }} />
             <div>
