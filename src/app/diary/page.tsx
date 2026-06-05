@@ -204,7 +204,7 @@ export default function DiaryPage() {
             </label>
 
             <button onClick={handleSave} disabled={saving || !hasAnyInput} style={{
-              width: '100%', background: 'var(--s-primary)', color: '#fff',
+              width: '100%', background: 'var(--s-primary)', color: 'var(--s-on-primary)',
               border: 'none', borderRadius: '10px', padding: '12px',
               cursor: 'pointer', fontWeight: 700, fontSize: '15px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -231,7 +231,7 @@ export default function DiaryPage() {
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--s-text-muted)' }}>
             <BookOpen size={48} style={{ marginBottom: '16px', opacity: 0.4 }} />
             <p style={{ marginBottom: '16px' }}>Войдите, чтобы видеть дневник</p>
-            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: '#fff', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
+            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
           </div>
         )}
 

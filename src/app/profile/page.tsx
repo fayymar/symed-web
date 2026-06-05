@@ -161,7 +161,7 @@ export default function ProfilePage() {
   const saveBtn = (
     <button onClick={handleSave} disabled={saving} style={{
       padding: '7px 18px', borderRadius: '999px', fontWeight: 600, fontSize: '14px',
-      color: '#fff', background: 'var(--s-primary)', border: 'none',
+      color: 'var(--s-on-primary)', background: 'var(--s-primary)', border: 'none',
       cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1,
       display: 'flex', alignItems: 'center', gap: '6px',
     }}>
@@ -328,7 +328,7 @@ export default function ProfilePage() {
         {/* Save button */}
         <button onClick={handleSave} disabled={saving} style={{
           width: '100%', padding: '16px', borderRadius: '999px',
-          fontWeight: 600, fontSize: '15px', color: '#fff',
+          fontWeight: 600, fontSize: '15px', color: 'var(--s-on-primary)',
           background: 'var(--s-primary)', border: 'none',
           cursor: saving ? 'not-allowed' : 'pointer',
           opacity: saving ? 0.5 : 1,

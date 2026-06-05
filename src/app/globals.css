@@ -2,69 +2,80 @@
 
 /* ── Light mode ─────────────────────────────────── */
 :root {
-  --s-bg:              #F5F5F7;
+  --s-bg:              #F5F5F6;
   --s-surface:         #FFFFFF;
   --s-surface-raw:     255,255,255;
-  --s-surface-2:       #F5F5F7;
-  --s-label:           #1D1D1F;
-  --s-label-2:         #3A3A3C;
-  --s-secondary:       #6E6E73;
-  --s-tertiary:        #8E8E93;
-  --s-separator:       #D2D2D7;
-  --s-fill-secondary:  #E5E5EA;
+  --s-surface-2:       #F5F5F6;
+  --s-label:           #333333;
+  --s-label-2:         #393939;
+  --s-secondary:       #666666;
+  --s-tertiary:        #999999;
+  --s-separator:       #DDDDDD;
+  --s-fill-secondary:  #EBEBEB;
 
-  --s-blue:            #0071E3;
-  --s-blue-hover:      #0077ED;
-  --s-blue-light:      #E8F1FB;
-  --s-blue-dark:       #0A84FF;   /* iOS dark blue */
+  /* T-Bank yellow — primary */
+  --s-primary:         #FFDD2D;
+  --s-primary-hover:   #FCC521;
+  --s-primary-active:  #FAB619;
+  --s-primary-light:   #FFFAE5;
+  --s-on-primary:      rgba(0,0,0,0.8);   /* text on yellow bg */
+
+  /* Keep semantic colours */
+  --s-blue:            #FFDD2D;
+  --s-blue-hover:      #FCC521;
+  --s-blue-light:      #FFFAE5;
+  --s-blue-dark:       #FAB619;
 
   --s-red:             #FF3B30;
   --s-green:           #34C759;
   --s-orange:          #FF9500;
 
-  --s-nav-bg:          rgba(245,245,247,0.82);
+  --s-nav-bg:          rgba(245,245,246,0.88);
 
-  /* ── Aliases used by new pages ─────────────────── */
-  --s-primary:         #0071E3;
-  --s-primary-light:   #E8F1FB;
-  --s-text:            #1D1D1F;
-  --s-text-secondary:  #6E6E73;
-  --s-text-muted:      #8E8E93;
-  --s-border:          #D2D2D7;
-  --s-fill:            #E5E5EA;
+  /* ── Aliases ────────────────────────────────────── */
+  --s-text:            #333333;
+  --s-text-secondary:  #666666;
+  --s-text-muted:      #999999;
+  --s-border:          #DDDDDD;
+  --s-fill:            #EBEBEB;
 }
 
 /* ── Dark mode ──────────────────────────────────── */
 [data-theme="dark"] {
-  --s-bg:              #000000;
-  --s-surface:         #1C1C1E;
-  --s-surface-raw:     28,28,30;
-  --s-surface-2:       #2C2C2E;
+  --s-bg:              #1A1A1A;
+  --s-surface:         #262626;
+  --s-surface-raw:     38,38,38;
+  --s-surface-2:       #333333;
   --s-label:           #FFFFFF;
-  --s-label-2:         #EBEBF5;
-  --s-secondary:       #EBEBF599;
-  --s-tertiary:        #EBEBF54D;
-  --s-separator:       #38383A;
-  --s-fill-secondary:  #3A3A3C;
+  --s-label-2:         #F0F0F0;
+  --s-secondary:       rgba(255,255,255,0.6);
+  --s-tertiary:        rgba(255,255,255,0.3);
+  --s-separator:       #404040;
+  --s-fill-secondary:  #393939;
 
-  --s-blue:            #0A84FF;
-  --s-blue-hover:      #409CFF;
-  --s-blue-light:      #0A84FF1A;
+  /* T-Bank yellow stays the same in dark mode */
+  --s-primary:         #FFDD2D;
+  --s-primary-hover:   #FCC521;
+  --s-primary-active:  #FAB619;
+  --s-primary-light:   rgba(255,221,45,0.15);
+  --s-on-primary:      rgba(0,0,0,0.8);
+
+  --s-blue:            #FFDD2D;
+  --s-blue-hover:      #FCC521;
+  --s-blue-light:      rgba(255,221,45,0.15);
 
   --s-red:             #FF453A;
   --s-green:           #30D158;
   --s-orange:          #FF9F0A;
 
-  --s-nav-bg:          rgba(28,28,30,0.82);
+  --s-nav-bg:          rgba(38,38,38,0.88);
 
   /* ── Aliases ────────────────────────────────────── */
-  --s-primary:         #0A84FF;
-  --s-primary-light:   #0A84FF1A;
   --s-text:            #FFFFFF;
-  --s-text-secondary:  #EBEBF599;
-  --s-text-muted:      #EBEBF54D;
-  --s-border:          #38383A;
-  --s-fill:            #3A3A3C;
+  --s-text-secondary:  rgba(255,255,255,0.6);
+  --s-text-muted:      rgba(255,255,255,0.3);
+  --s-border:          #404040;
+  --s-fill:            #393939;
 }
 
 /* ── Base ───────────────────────────────────────── */

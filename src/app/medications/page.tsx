@@ -175,7 +175,7 @@ export default function MedicationsPage() {
                   }}
                   disabled={!newTime}
                   style={{
-                    background: 'var(--s-primary)', color: '#fff', border: 'none',
+                    background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none',
                     borderRadius: '8px', padding: '8px 16px', cursor: 'pointer',
                     fontWeight: 600, fontSize: '14px', opacity: newTime ? 1 : 0.5,
                   }}
@@ -188,7 +188,7 @@ export default function MedicationsPage() {
                   {selectedTimes.map(t => (
                     <span key={t} style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
-                      background: 'var(--s-primary)', color: '#fff',
+                      background: 'var(--s-primary)', color: 'var(--s-on-primary)',
                       borderRadius: '8px', padding: '5px 10px', fontSize: '13px', fontWeight: 500,
                     }}>
                       {t}
@@ -222,7 +222,7 @@ export default function MedicationsPage() {
             </label>
 
             <button onClick={handleSave} disabled={saving || !name.trim()} style={{
-              width: '100%', background: 'var(--s-primary)', color: '#fff',
+              width: '100%', background: 'var(--s-primary)', color: 'var(--s-on-primary)',
               border: 'none', borderRadius: '10px', padding: '12px',
               cursor: 'pointer', fontWeight: 700, fontSize: '15px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -249,7 +249,7 @@ export default function MedicationsPage() {
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--s-text-muted)' }}>
             <Pill size={48} style={{ marginBottom: '16px', opacity: 0.4 }} />
             <p style={{ marginBottom: '16px' }}>Войдите, чтобы видеть лекарства</p>
-            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: '#fff', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
+            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
           </div>
         )}
 

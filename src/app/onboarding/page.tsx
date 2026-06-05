@@ -68,7 +68,7 @@ export default function OnboardingPage() {
   };
   const primaryBtn: React.CSSProperties = {
     width: '100%', padding: '15px', borderRadius: 14, border: 'none',
-    background: 'var(--s-primary)', color: '#fff',
+    background: 'var(--s-primary)', color: 'var(--s-on-primary)',
     fontSize: 16, fontWeight: 600, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     opacity: loading ? 0.7 : 1,

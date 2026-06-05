@@ -96,7 +96,7 @@ export default function HistoryPage() {
               <p style={{ fontSize: '14px', color: 'var(--s-text-muted)' }}>Ваши консультации появятся здесь</p>
             </div>
             <button onClick={() => router.push('/consultation')} style={{
-              background: 'var(--s-primary)', color: '#fff', border: 'none',
+              background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none',
               borderRadius: '20px', padding: '10px 24px', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
             }}>Начать консультацию</button>
           </div>

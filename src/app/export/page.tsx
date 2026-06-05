@@ -90,7 +90,7 @@ export default function ExportPage() {
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--s-text-muted)' }}>
             <FileDown size={48} style={{ marginBottom: '16px', opacity: 0.4 }} />
             <p style={{ marginBottom: '16px' }}>Войдите, чтобы экспортировать данные</p>
-            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: '#fff', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
+            <button onClick={() => router.push('/auth')} style={{ background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none', borderRadius: '10px', padding: '12px 24px', cursor: 'pointer', fontWeight: 600 }}>Войти</button>
           </div>
         )}
 
@@ -111,7 +111,7 @@ export default function ExportPage() {
             {/* Print button */}
             <div className="no-print" style={{ marginBottom: '24px' }}>
               <button onClick={handlePrint} style={{
-                background: 'var(--s-primary)', color: '#fff', border: 'none',
+                background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none',
                 borderRadius: '12px', padding: '14px 28px', cursor: 'pointer',
                 fontWeight: 700, fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px',
               }}>

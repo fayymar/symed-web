@@ -133,7 +133,7 @@ export default function AuthPage() {
   };
   const btnPrimary: React.CSSProperties = {
     width: '100%', padding: '13px', borderRadius: '999px', border: 'none',
-    background: 'var(--s-primary)', color: '#fff', fontSize: '15px',
+    background: 'var(--s-primary)', color: 'var(--s-on-primary)', fontSize: '15px',
     fontWeight: 600, cursor: 'pointer',
   };
   const btnOutline: React.CSSProperties = {

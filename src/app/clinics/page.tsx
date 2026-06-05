@@ -110,7 +110,7 @@ export default function ClinicsPage() {
         {geoError && (
           <div style={{ background: 'var(--s-surface)', border: '1px solid var(--s-border)', borderRadius: '10px', padding: '10px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', fontSize: '13px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--s-text-muted)' }}><AlertCircle size={15} /> {geoError}</span>
-            <button onClick={requestLocation} style={{ background: 'var(--s-primary)', color: '#fff', border: 'none', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>Повторить</button>
+            <button onClick={requestLocation} style={{ background: 'var(--s-primary)', color: 'var(--s-on-primary)', border: 'none', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '12px' }}>Повторить</button>
           </div>
         )}
 
