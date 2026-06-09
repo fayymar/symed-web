@@ -2,88 +2,87 @@
 
 /* ── Light mode ─────────────────────────────────── */
 :root {
-  --s-bg:              #F5F5F6;
+  --s-bg:              #F5FFFB;
   --s-surface:         #FFFFFF;
   --s-surface-raw:     255,255,255;
-  --s-surface-2:       #F5F5F6;
-  --s-label:           #333333;
-  --s-label-2:         #393939;
-  --s-secondary:       #666666;
-  --s-tertiary:        #999999;
-  --s-separator:       #DDDDDD;
-  --s-fill-secondary:  #EBEBEB;
+  --s-surface-2:       #EBF9F4;
+  --s-label:           #102A27;
+  --s-label-2:         #2D5E55;
+  --s-secondary:       #2D5E55;
+  --s-tertiary:        #6B9E95;
+  --s-separator:       #C2E8DE;
+  --s-fill-secondary:  #D9F0EA;
 
-  /* T-Bank yellow — primary */
-  --s-primary:         #FFDD2D;
-  --s-primary-hover:   #FCC521;
-  --s-primary-active:  #FAB619;
-  --s-primary-light:   #FFFAE5;
-  --s-on-primary:      rgba(0,0,0,0.8);   /* text on yellow bg */
+  --s-primary:         #10A875;
+  --s-primary-hover:   #0D9065;
+  --s-primary-active:  #0B7A55;
+  --s-primary-light:   #E6F7F2;
+  --s-on-primary:      #FFFFFF;
 
-  /* Keep semantic colours */
-  --s-blue:            #FFDD2D;
-  --s-blue-hover:      #FCC521;
-  --s-blue-light:      #FFFAE5;
-  --s-blue-dark:       #FAB619;
+  --s-blue:            #10A875;
+  --s-blue-hover:      #0D9065;
+  --s-blue-light:      #E6F7F2;
+  --s-blue-dark:       #0B7A55;
 
-  --s-red:             #FF3B30;
-  --s-green:           #34C759;
-  --s-orange:          #FF9500;
+  --s-accent:          #2DD4BF;
+  --s-accent-light:    #E0FAF7;
 
-  --s-nav-bg:          rgba(245,245,246,0.88);
+  --s-red:             #EF4444;
+  --s-green:           #22C55E;
+  --s-orange:          #F59E0B;
 
-  /* ── Aliases ────────────────────────────────────── */
-  --s-text:            #333333;
-  --s-text-secondary:  #666666;
-  --s-text-muted:      #999999;
-  --s-border:          #DDDDDD;
-  --s-fill:            #EBEBEB;
+  --s-nav-bg:          rgba(245,255,251,0.88);
+
+  --s-text:            #102A27;
+  --s-text-secondary:  #2D5E55;
+  --s-text-muted:      #6B9E95;
+  --s-border:          #C2E8DE;
+  --s-fill:            #D9F0EA;
 }
 
 /* ── Dark mode ──────────────────────────────────── */
 [data-theme="dark"] {
-  --s-bg:              #1A1A1A;
-  --s-surface:         #262626;
-  --s-surface-raw:     38,38,38;
-  --s-surface-2:       #333333;
-  --s-label:           #FFFFFF;
-  --s-label-2:         #F0F0F0;
-  --s-secondary:       rgba(255,255,255,0.6);
-  --s-tertiary:        rgba(255,255,255,0.3);
-  --s-separator:       #404040;
-  --s-fill-secondary:  #393939;
+  --s-bg:              #0A1A17;
+  --s-surface:         #122320;
+  --s-surface-raw:     18,35,32;
+  --s-surface-2:       #1A3530;
+  --s-label:           #F0FBF8;
+  --s-label-2:         #C8EDE5;
+  --s-secondary:       rgba(240,251,248,0.65);
+  --s-tertiary:        rgba(240,251,248,0.35);
+  --s-separator:       #1F4A42;
+  --s-fill-secondary:  #1A3530;
 
-  /* T-Bank yellow stays the same in dark mode */
-  --s-primary:         #FFDD2D;
-  --s-primary-hover:   #FCC521;
-  --s-primary-active:  #FAB619;
-  --s-primary-light:   rgba(255,221,45,0.15);
-  --s-on-primary:      rgba(0,0,0,0.8);
+  --s-primary:         #10A875;
+  --s-primary-hover:   #0D9065;
+  --s-primary-active:  #0B7A55;
+  --s-primary-light:   rgba(16,168,117,0.18);
+  --s-on-primary:      #FFFFFF;
 
-  --s-blue:            #FFDD2D;
-  --s-blue-hover:      #FCC521;
-  --s-blue-light:      rgba(255,221,45,0.15);
+  --s-blue:            #10A875;
+  --s-blue-hover:      #0D9065;
+  --s-blue-light:      rgba(16,168,117,0.18);
 
-  --s-red:             #FF453A;
-  --s-green:           #30D158;
-  --s-orange:          #FF9F0A;
+  --s-accent:          #2DD4BF;
+  --s-accent-light:    rgba(45,212,191,0.18);
 
-  --s-nav-bg:          rgba(38,38,38,0.88);
+  --s-red:             #F87171;
+  --s-green:           #4ADE80;
+  --s-orange:          #FBB954;
 
-  /* ── Aliases ────────────────────────────────────── */
-  --s-text:            #FFFFFF;
-  --s-text-secondary:  rgba(255,255,255,0.6);
-  --s-text-muted:      rgba(255,255,255,0.3);
-  --s-border:          #404040;
-  --s-fill:            #393939;
+  --s-nav-bg:          rgba(18,35,32,0.88);
+
+  --s-text:            #F0FBF8;
+  --s-text-secondary:  rgba(240,251,248,0.65);
+  --s-text-muted:      rgba(240,251,248,0.35);
+  --s-border:          #1F4A42;
+  --s-fill:            #1A3530;
 }
 
 /* ── Base ───────────────────────────────────────── */
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
-
 html { color-scheme: light; transition: background 0.2s; }
 [data-theme="dark"] { color-scheme: dark; }
-
 body {
   background: var(--s-bg);
   color: var(--s-label);
@@ -99,6 +98,5 @@ body {
 /* ── Animations ─────────────────────────────────── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin   { to { transform: rotate(360deg); } }
-
 .anim-fade-up { animation: fadeUp 0.22s ease both; }
 .anim-spin    { animation: spin 1s linear infinite; }
