@@ -22,11 +22,11 @@ export const api = {
     }).then(r => r.json()),
 
   startConsultation: (userId: number | null, symptoms: string) =>
-    fetch(`${API_BASE}/api/consultation/start`, {
+    apiFetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...(userId ? { user_id: userId } : {}), symptoms }),
-    }).then(r => r.json()),
+    }),
 
   sendAnswers: (sessionId: string, userId: number | null, answers: string[]) =>
     fetch(`${API_BASE}/api/consultation/answer`, {

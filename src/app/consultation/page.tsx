@@ -45,8 +45,14 @@ export default function SymptomsPage() {
       } else {
         router.push('/consultation/questions');
       }
-    } catch {
-      setError('Ошибка соединения. Попробуйте ещё раз.');
+    } catch (e: any) {
+      const msg = e?.message || '';
+      if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
+        setError('Сервис временно перегружен. Попробуйте через минуту.');
+      } else {
+        setError('Ошибка соединения. Попробуйте ещё раз.');
+      }
+      console.error('Consultation start error:', e);
     } finally {
       setLoading(false);
     }
