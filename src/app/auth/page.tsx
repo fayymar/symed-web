@@ -27,6 +27,7 @@ export default function AuthPage() {
   const [code, setCode]         = useState('');
   const [copied, setCopied]     = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const codeRef  = useRef('');
 
@@ -39,9 +40,13 @@ export default function AuthPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError]     = useState('');
 
+  // Показываем баннер, если уже есть активная сессия — но не редиректим тихо
+  useEffect(() => {
+    if (auth.isLoggedIn()) setCurrentUser(auth.getUser());
+  }, []);
+
   // ── Telegram code ──────────────────────────────────────────────────
   useEffect(() => {
-    if (auth.isLoggedIn()) { router.push('/dashboard'); return; }
     if (tab !== 'telegram') return;
     const newCode = generateCode();
     setCode(newCode); codeRef.current = newCode;
@@ -176,6 +181,32 @@ export default function AuthPage() {
             </h1>
             <p style={{ color: 'var(--s-text-secondary)', fontSize: '14px' }}>Выберите удобный способ</p>
           </div>
+
+          {currentUser && (
+            <div style={{
+              background: 'var(--s-primary-light)', border: '1px solid var(--s-primary)',
+              borderRadius: '14px', padding: '14px 16px', marginBottom: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+            }}>
+              <div style={{ fontSize: '13px', color: 'var(--s-text)' }}>
+                Вы уже вошли как <strong>{currentUser.first_name}</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <button onClick={() => router.push('/dashboard')}
+                  style={{ fontSize: '12px', fontWeight: 600, color: 'var(--s-on-primary)',
+                    background: 'var(--s-primary)', border: 'none', borderRadius: '8px',
+                    padding: '6px 10px', cursor: 'pointer' }}>
+                  Продолжить
+                </button>
+                <button onClick={() => { auth.logout(); setCurrentUser(null); }}
+                  style={{ fontSize: '12px', fontWeight: 600, color: 'var(--s-text-secondary)',
+                    background: 'var(--s-fill)', border: 'none', borderRadius: '8px',
+                    padding: '6px 10px', cursor: 'pointer' }}>
+                  Выйти
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '6px', marginBottom: '20px',
