@@ -10,6 +10,19 @@ export interface TelegramUser {
 
 const USER_KEY = 'symed_user';
 
+/**
+ * Derives a stable integer user_id from a UUID (e.g. Supabase auth user.id)
+ * using the first 12 hex chars of its SHA-256 hash, mapped into the
+ * 5,000,000,000–9,999,999,999 range to avoid clashing with Telegram IDs.
+ * MUST stay in sync with the Python implementation on the backend
+ * (hashlib.sha256(...).hexdigest()[:12]) — do not modify independently.
+ */
+export async function deriveUserId(uuid: string): Promise<number> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
+  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return 5_000_000_000 + (parseInt(hex.slice(0, 12), 16) % 4_999_999_999);
+}
+
 export const auth = {
   getUser: (): TelegramUser | null => {
     if (typeof window === 'undefined') return null;

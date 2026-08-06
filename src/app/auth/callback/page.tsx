@@ -4,15 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { auth } from '@/lib/auth';
+import { auth, deriveUserId } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
-
-async function deriveUserId(uuid: string): Promise<number> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
-  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  return 5_000_000_000 + (parseInt(hex.slice(0, 12), 16) % 4_999_999_999);
-}
 
 async function syncWithBackend(provider: string, email: string, fullName: string, supabaseId: string, avatar: string | null) {
   try {

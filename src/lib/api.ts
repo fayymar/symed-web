@@ -15,11 +15,11 @@ export const api = {
     apiFetch(`${API_BASE}/api/profile/${userId}`),
 
   saveProfile: (userId: number, data: object) =>
-    fetch(`${API_BASE}/api/profile/${userId}`, {
+    apiFetch(`${API_BASE}/api/profile/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(r => r.json()),
+    }),
 
   startConsultation: (userId: number | null, symptoms: string) =>
     apiFetch(`${API_BASE}/api/consultation/start`, {
@@ -29,25 +29,25 @@ export const api = {
     }),
 
   sendAnswers: (sessionId: string, userId: number | null, answers: string[]) =>
-    fetch(`${API_BASE}/api/consultation/answer`, {
+    apiFetch(`${API_BASE}/api/consultation/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, ...(userId ? { user_id: userId } : {}), answers }),
-    }).then(r => r.json()),
+    }),
 
   sendDuration: (sessionId: string, duration: string) =>
-    fetch(`${API_BASE}/api/consultation/duration`, {
+    apiFetch(`${API_BASE}/api/consultation/duration`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, duration }),
-    }).then(r => r.json()),
+    }),
 
   getResult: (sessionId: string, anamnesisAnswers?: string[]) =>
-    fetch(`${API_BASE}/api/consultation/result`, {
+    apiFetch(`${API_BASE}/api/consultation/result`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, anamnesis_answers: anamnesisAnswers ?? [] }),
-    }).then(r => r.json()),
+    }),
 
   getConsultations: (userId: number) =>
     apiFetch(`${API_BASE}/api/consultations/${userId}`),
@@ -56,31 +56,31 @@ export const api = {
     apiFetch(`${API_BASE}/api/medications/${userId}`),
 
   addMedication: (userId: number, data: object) =>
-    fetch(`${API_BASE}/api/medications/${userId}`, {
+    apiFetch(`${API_BASE}/api/medications/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(r => r.json()),
+    }),
 
   getDiary: (userId: number) =>
     apiFetch(`${API_BASE}/api/diary/${userId}`),
 
   addDiaryEntry: (userId: number, data: object) =>
-    fetch(`${API_BASE}/api/diary/${userId}`, {
+    apiFetch(`${API_BASE}/api/diary/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).then(r => r.json()),
+    }),
 
   getHealthMetrics: (userId: number, type?: string) =>
-    fetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`).then(r => r.json()),
+    apiFetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`),
 
   requestAuthCode: (code: string) =>
-    fetch(`${API_BASE}/api/auth/request`, {
+    apiFetch(`${API_BASE}/api/auth/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
-    }).then(r => r.json()),
+    }),
 
   checkAuthStatus: (code: string) =>
     apiFetch(`${API_BASE}/api/auth/status/${code}`),
