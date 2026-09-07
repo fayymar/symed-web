@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import PageHeader from '@/components/PageHeader';
-import { MapPin, Phone, Clock, Navigation, Loader2, AlertCircle, ArrowLeft, Building2, Search } from 'lucide-react';
+import { MapPin, Phone, Clock, Navigation, Loader2, AlertCircle, Building2, Search } from 'lucide-react';
 
 interface Clinic {
   id: number;
@@ -52,7 +51,6 @@ function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 
 export default function ClinicsPage() {
-  const router = useRouter();
   const { theme } = useTheme();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');

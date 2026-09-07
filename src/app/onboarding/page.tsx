@@ -20,16 +20,17 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
-  const [fullName,  setFullName]  = useState('');
+  const [fullName,  setFullName]  = useState(() => {
+    const user = auth.isLoggedIn() ? auth.getUser() : null;
+    return user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : '';
+  });
   const [birthdate, setBirthdate] = useState('');
   const [gender,    setGender]    = useState('');
   const [height,    setHeight]    = useState('');
   const [weight,    setWeight]    = useState('');
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
-    const user = auth.getUser();
-    if (user) setFullName([user.first_name, user.last_name].filter(Boolean).join(' '));
+    if (!auth.isLoggedIn()) router.push('/auth');
   }, [router]);
 
   const steps: Step[]  = ['name', 'bio', 'body'];
@@ -51,7 +52,7 @@ export default function OnboardingPage() {
         weight:    weight    ? Number(weight) : null,
       });
       router.push('/dashboard');
-    } catch (e: any) {
+    } catch {
       setError('Не удалось сохранить профиль. Проверьте соединение и попробуйте ещё раз.');
       setLoading(false);
     }

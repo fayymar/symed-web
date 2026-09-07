@@ -31,11 +31,10 @@ const CARDS: NavCard[] = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<TelegramUser | null>(null);
+  const [user] = useState<TelegramUser | null>(() => (auth.isLoggedIn() ? auth.getUser() : null));
 
   useEffect(() => {
-    if (!auth.isLoggedIn()) { router.push('/auth'); return; }
-    setUser(auth.getUser());
+    if (!auth.isLoggedIn()) router.push('/auth');
   }, [router]);
 
   if (!user) return null;

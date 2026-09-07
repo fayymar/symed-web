@@ -7,7 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 
-import { FileDown, ArrowLeft, Loader2, AlertCircle, User, Pill, BookOpen, Activity, FileText } from 'lucide-react';
+import { FileDown, Loader2, AlertCircle, User, Pill, BookOpen, Activity, FileText } from 'lucide-react';
 
 interface Profile {
   full_name?: string;
@@ -27,23 +27,13 @@ interface Profile {
 export default function ExportPage() {
   const router = useRouter();
   const { theme } = useTheme();
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId] = useState<number | null>(() => auth.getUserId());
   const [profile, setProfile] = useState<Profile | null>(null);
   const [consultations, setConsultations] = useState<unknown[]>([]);
   const [medications, setMedications] = useState<unknown[]>([]);
   const [diary, setDiary] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => auth.getUserId() !== null);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const id = auth.getUserId();
-    if (id !== null) {
-      setUserId(id);
-      loadAll(id);
-    } else {
-      setLoading(false);
-    }
-  }, []);
 
   async function loadAll(id: number) {
     setLoading(true);
@@ -65,6 +55,12 @@ export default function ExportPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (userId !== null) {
+      loadAll(userId);
+    }
+  }, [userId]);
 
   function handlePrint() {
     window.print();
