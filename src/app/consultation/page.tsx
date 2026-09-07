@@ -45,8 +45,8 @@ export default function SymptomsPage() {
       } else {
         router.push('/consultation/questions');
       }
-    } catch (e: any) {
-      const msg = e?.message || '';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '';
       if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
         setError('Сервис временно перегружен. Попробуйте через минуту.');
       } else {

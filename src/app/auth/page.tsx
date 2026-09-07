@@ -27,7 +27,7 @@ export default function AuthPage() {
   const [code, setCode]         = useState('');
   const [copied, setCopied]     = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<TelegramUser | null>(() => (auth.isLoggedIn() ? auth.getUser() : null));
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const codeRef  = useRef('');
 
@@ -39,11 +39,6 @@ export default function AuthPage() {
   const [showPass, setShowPass]         = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError]     = useState('');
-
-  // Показываем баннер, если уже есть активная сессия — но не редиректим тихо
-  useEffect(() => {
-    if (auth.isLoggedIn()) setCurrentUser(auth.getUser());
-  }, []);
 
   // ── Telegram code ──────────────────────────────────────────────────
   useEffect(() => {

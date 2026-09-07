@@ -15,7 +15,7 @@ async function syncWithBackend(provider: string, email: string, fullName: string
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ provider, email, name: fullName, provider_id: supabaseId, avatar }),
     });
-  } catch (_) {}
+  } catch {}
 }
 
 export default function AuthCallbackPage() {
@@ -73,13 +73,14 @@ export default function AuthCallbackPage() {
         syncWithBackend(provider, email, fullName, user.id, avatar);
 
         router.push(isNew ? '/onboarding' : '/dashboard');
-      } catch (e: any) {
-        setError(e?.message ?? 'Ошибка авторизации');
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : undefined;
+        setError(message ?? 'Ошибка авторизации');
       }
     }
 
     run();
-  }, []);
+  }, [router]);
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s-bg)' }}>

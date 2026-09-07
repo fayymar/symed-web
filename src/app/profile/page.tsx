@@ -140,7 +140,7 @@ export default function ProfilePage() {
         try {
           const s = await api.checkLinkStatus(data.code);
           if (s.verified) { clearInterval(poll); setLinkStatus('linked'); }
-        } catch (_) {}
+        } catch {}
       }, 3000);
       linkPollRef.current = poll;
     } catch (e) { console.error('Link error:', e); }

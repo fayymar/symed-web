@@ -8,7 +8,7 @@ import { useTheme } from '@/context/ThemeContext';
 import PageHeader from '@/components/PageHeader';
 import {
   BookOpen, Plus, X, Thermometer, Heart, Activity,
-  Scale, Smile, FileText, ArrowLeft, Loader2, AlertCircle,
+  Scale, Smile, FileText, Loader2, AlertCircle,
   ChevronDown, ChevronUp, CheckCircle,
 } from 'lucide-react';
 
@@ -36,9 +36,9 @@ interface DiaryEntry {
 export default function DiaryPage() {
   const router = useRouter();
   const { theme } = useTheme();
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId] = useState<number | null>(() => auth.getUserId());
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => auth.getUserId() !== null);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,14 +55,10 @@ export default function DiaryPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    const id = auth.getUserId();
-    if (id !== null) {
-      setUserId(id);
-      loadEntries(id);
-    } else {
-      setLoading(false);
+    if (userId !== null) {
+      loadEntries(userId);
     }
-  }, []);
+  }, [userId]);
 
   async function loadEntries(id: number) {
     setLoading(true);

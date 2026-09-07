@@ -41,8 +41,16 @@ export default function QuestionsPage() {
   const options = current ? deduplicateOptions(current.options || []) : [];
   const multi = current ? isMultiSelect(options) : false;
 
-  // Сбрасываем выбор при смене вопроса
-  useEffect(() => { setSelected([]); setShowCustom(false); setCustom(''); }, [currentIndex]);
+  // Сбрасываем выбор при смене вопроса — обновление состояния прямо во время
+  // рендера (официальный паттерн React для "adjusting state when a prop changes"),
+  // а не в эффекте: React применяет его до коммита, без лишнего кадра рендера.
+  const [prevIndex, setPrevIndex] = useState(currentIndex);
+  if (currentIndex !== prevIndex) {
+    setPrevIndex(currentIndex);
+    setSelected([]);
+    setShowCustom(false);
+    setCustom('');
+  }
 
   useEffect(() => {
     if (!sessionId) { router.push('/consultation'); return; }
@@ -190,7 +198,11 @@ export default function QuestionsPage() {
               <input autoFocus value={custom} onChange={e => setCustom(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && custom.trim()) {
-                    multi ? setSelected(prev => [...prev.filter(s => !/^ничего/i.test(s)), custom.trim()]) : handleSingle(custom.trim());
+                    if (multi) {
+                      setSelected(prev => [...prev.filter(s => !/^ничего/i.test(s)), custom.trim()]);
+                    } else {
+                      handleSingle(custom.trim());
+                    }
                     setCustom(''); setShowCustom(false);
                   }
                 }}

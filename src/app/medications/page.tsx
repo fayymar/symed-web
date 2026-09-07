@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Pill, Clock, Calendar, Plus, X, Loader2, AlertCircle, CheckCircle, FileText } from 'lucide-react';
+import { Pill, Clock, Calendar, Plus, X, Loader2, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
@@ -32,9 +32,9 @@ function formatDate(s: string) {
 export default function MedicationsPage() {
   const router = useRouter();
   const { theme } = useTheme();
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId] = useState<number | null>(() => auth.getUserId());
   const [items, setItems] = useState<Medication[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => auth.getUserId() !== null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -51,14 +51,10 @@ export default function MedicationsPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    const id = auth.getUserId();
-    if (id !== null) {
-      setUserId(id);
-      loadMeds(id);
-    } else {
-      setLoading(false);
+    if (userId !== null) {
+      loadMeds(userId);
     }
-  }, []);
+  }, [userId]);
 
   async function loadMeds(id: number) {
     setLoading(true);
