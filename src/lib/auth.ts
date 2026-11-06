@@ -78,10 +78,11 @@ export const auth = {
     // локальная очистка не должна зависеть от зависшего сетевого запроса.
     try {
       if (supabase) {
-        await Promise.race([
-          supabase.auth.signOut(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
-        ]);
+        // signOut() может сначала обновить истёкшую сессию и записать её в
+        // localStorage — поэтому после его завершения (когда бы оно ни случилось)
+        // очищаем ещё раз.
+        const signOut = supabase.auth.signOut().catch(() => undefined).finally(() => auth.clear());
+        await Promise.race([signOut, new Promise((resolve) => setTimeout(resolve, 3000))]);
       }
     } catch { /* сеть недоступна */ }
     auth.clear();
