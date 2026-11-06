@@ -22,14 +22,14 @@ export default function AuthCallbackPage() {
 
         // PKCE: обмениваем одноразовый code на сессию. Токены из #hash ссылки
         // не принимаем — так нельзя подсунуть чужую сессию готовой ссылкой.
+        // Ранее сохранённую сессию НЕ подхватываем: вход завершается только свежим
+        // кодом из этого редиректа, иначе на общем компьютере можно было бы
+        // открыть /auth/callback и попасть в аккаунт предыдущего пользователя.
         const code = params.get('code');
-        if (code) {
-          const { error: e } = await supabase!.auth.exchangeCodeForSession(code);
-          if (e) throw e;
-        }
         if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
-
-        const { data: { session } } = await supabase!.auth.getSession();
+        if (!code) throw new Error('Сессия не получена. Попробуйте ещё раз.');
+        const { data: { session }, error: e } = await supabase!.auth.exchangeCodeForSession(code);
+        if (e) throw e;
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
         // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии

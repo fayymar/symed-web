@@ -37,10 +37,21 @@ export const auth = {
     try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
   },
 
+  /**
+   * Полностью завершает сессию в этом браузере: токен бэкенда, данные
+   * пользователя и сохранённую сессию Supabase (sb-*). Удаление локальное и
+   * безусловное — не зависит от сети. Вызывается при выходе, ответе 401 и
+   * истечении сессии, чтобы на общем компьютере следующий человек не мог
+   * получить доступ к чужим медицинским данным.
+   */
   clear: () => {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('symed_user_id');
     localStorage.removeItem(TOKEN_KEY);
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-')) localStorage.removeItem(key);
+    }
   },
 
   /**
@@ -49,22 +60,10 @@ export const auth = {
    * было бы снова получить токен без ввода пароля.
    */
   logout: async () => {
+    // Сначала пробуем отозвать refresh-токен на сервере Supabase, потом в любом
+    // случае удаляем всё локально (auth.clear не зависит от результата запроса).
+    try { await supabase?.auth.signOut(); } catch { /* сеть недоступна */ }
     auth.clear();
-    if (supabase) {
-      // global — отзывает refresh-токен на сервере Supabase. Если сеть или
-      // сервер недоступны, сессия осталась бы в браузере, поэтому в этом случае
-      // удаляем её хотя бы локально (scope: 'local' не делает сетевых запросов).
-      let failed = false;
-      try {
-        const { error } = await supabase.auth.signOut();
-        failed = Boolean(error);
-      } catch {
-        failed = true;
-      }
-      if (failed) {
-        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* уже нечего очищать */ }
-      }
-    }
     window.location.href = '/';
   },
 
@@ -89,8 +88,10 @@ export const auth = {
     // Старые сессии без токена считаем разлогиненными — нужен повторный вход
     if (!user || !auth.getToken()) return false;
     const age = Date.now() / 1000 - user.auth_date;
-    // 7 days for OAuth users (auth_date is set at login and refreshed on activity)
-    return age < 86400 * 7;
+    // 7 дней без активности (auth_date обновляется при активности) — сессия
+    // истекла: очищаем всё, включая токен бэкенда и сессию Supabase.
+    if (age >= 86400 * 7) { auth.clear(); return false; }
+    return true;
   },
 
   // Call on user activity to extend session
