@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
+import { TelegramAutoLogin } from '@/components/TelegramAutoLogin';
 import { ConsultationProvider } from '@/context/ConsultationContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import './globals.css';
@@ -20,8 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru" suppressHydrationWarning>
       <body>
+        {/* SDK Telegram Mini App: даёт initData для автоматического входа внутри Telegram */}
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <ThemeProvider>
           <ConsultationProvider>
+            <TelegramAutoLogin />
             {children}
           </ConsultationProvider>
         </ThemeProvider>

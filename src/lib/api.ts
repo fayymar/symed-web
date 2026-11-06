@@ -107,6 +107,14 @@ export const api = {
       body: JSON.stringify({ access_token: accessToken }),
     }),
 
+  // Вход внутри Telegram (Mini App): бэкенд проверяет подпись initData
+  telegramWebAppLogin: (initData: string) =>
+    apiFetch(`${API_BASE}/api/auth/telegram-webapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: initData }),
+    }),
+
   requestLinkCode: () =>
     apiFetch(`${API_BASE}/api/auth/link-request`, { method: 'POST' }),
 
