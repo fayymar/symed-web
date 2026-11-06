@@ -9,19 +9,7 @@ export interface TelegramUser {
 }
 
 const USER_KEY = 'symed_user';
-
-/**
- * Derives a stable integer user_id from a UUID (e.g. Supabase auth user.id)
- * using the first 12 hex chars of its SHA-256 hash, mapped into the
- * 5,000,000,000–9,999,999,999 range to avoid clashing with Telegram IDs.
- * MUST stay in sync with the Python implementation on the backend
- * (hashlib.sha256(...).hexdigest()[:12]) — do not modify independently.
- */
-export async function deriveUserId(uuid: string): Promise<number> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(uuid));
-  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  return 5_000_000_000 + (parseInt(hex.slice(0, 12), 16) % 4_999_999_999);
-}
+const TOKEN_KEY = 'symed_token';
 
 export const auth = {
   getUser: (): TelegramUser | null => {
@@ -32,14 +20,29 @@ export const auth = {
     } catch { return null; }
   },
 
-  setUser: (user: TelegramUser) => {
+  /**
+   * Сохраняет пользователя и токен сессии, выданный бэкендом после входа.
+   * Без токена бэкенд не отдаёт данные пользователя (401).
+   */
+  setUser: (user: TelegramUser, token: string) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.setItem('symed_user_id', String(user.id));
+    localStorage.setItem(TOKEN_KEY, token);
+  },
+
+  getToken: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  },
+
+  clear: () => {
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('symed_user_id');
+    localStorage.removeItem(TOKEN_KEY);
   },
 
   logout: () => {
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem('symed_user_id');
+    auth.clear();
     window.location.href = '/';
   },
 
@@ -61,7 +64,8 @@ export const auth = {
 
   isLoggedIn: (): boolean => {
     const user = auth.getUser();
-    if (!user) return false;
+    // Старые сессии без токена считаем разлогиненными — нужен повторный вход
+    if (!user || !auth.getToken()) return false;
     const age = Date.now() / 1000 - user.auth_date;
     // 7 days for OAuth users (auth_date is set at login and refreshed on activity)
     return age < 86400 * 7;
@@ -74,25 +78,5 @@ export const auth = {
       user.auth_date = Math.floor(Date.now() / 1000);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
     }
-  },
-
-  /**
-   * Verifies Telegram Login Widget data via server-side HMAC check,
-   * then saves the user to localStorage. Throws on failure.
-   */
-  verifyAndSetUser: async (user: TelegramUser): Promise<void> => {
-    const res = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error ?? 'Verification failed');
-    }
-
-    auth.setUser(user);
   },
 };

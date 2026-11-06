@@ -1,7 +1,23 @@
+import { auth } from './auth';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://telegram-doctor-bot.onrender.com';
 
+/**
+ * Все запросы к бэкенду идут через эту функцию: она добавляет токен сессии
+ * (Authorization: Bearer). Если токен истёк или недействителен (401) —
+ * выходим из аккаунта и отправляем на страницу входа.
+ */
 async function apiFetch(url: string, options?: RequestInit) {
-  const res = await fetch(url, options);
+  const headers = new Headers(options?.headers);
+  const token = auth.getToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401 && token) {
+    auth.clear();
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+      window.location.href = '/auth';
+    }
+  }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try { const j = await res.json(); msg = j.error || msg; } catch {}
@@ -21,18 +37,19 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  startConsultation: (userId: number | null, symptoms: string) =>
+  // Пользователь определяется по токену; без токена консультация идёт в гостевом режиме
+  startConsultation: (symptoms: string) =>
     apiFetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...(userId ? { user_id: userId } : {}), symptoms }),
+      body: JSON.stringify({ symptoms }),
     }),
 
-  sendAnswers: (sessionId: string, userId: number | null, answers: string[]) =>
+  sendAnswers: (sessionId: string, answers: string[]) =>
     apiFetch(`${API_BASE}/api/consultation/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, ...(userId ? { user_id: userId } : {}), answers }),
+      body: JSON.stringify({ session_id: sessionId, answers }),
     }),
 
   sendDuration: (sessionId: string, duration: string) =>
@@ -75,27 +92,39 @@ export const api = {
   getHealthMetrics: (userId: number, type?: string) =>
     apiFetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`),
 
-  requestAuthCode: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/request`, {
+  // Вход по коду, который бот прислал пользователю в Telegram (/login)
+  loginWithCode: (code: string) =>
+    apiFetch(`${API_BASE}/api/auth/code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     }),
 
-  checkAuthStatus: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/status/${code}`),
-
-  requestLinkCode: (userId: number) =>
-    apiFetch(`${API_BASE}/api/auth/link-request`, {
+  // Вход через Supabase (Google/Apple/email): бэкенд сам проверяет access_token
+  socialLogin: (accessToken: string) =>
+    apiFetch(`${API_BASE}/api/auth/social`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({ access_token: accessToken }),
     }),
 
-  checkLinkStatus: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/link-status/${code}`),
+  // Вход внутри Telegram (Mini App): бэкенд проверяет подпись initData
+  telegramWebAppLogin: (initData: string) =>
+    apiFetch(`${API_BASE}/api/auth/telegram-webapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: initData }),
+    }),
 
-  saveFeedback: (consultationId: string, rating: 'good' | 'bad') =>
+  // Привязать Telegram к текущему аккаунту кодом из бота
+  linkTelegram: (code: string) =>
+    apiFetch(`${API_BASE}/api/auth/link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }),
+
+  saveFeedback: (consultationId: number, rating: 'good' | 'bad') =>
     apiFetch(`${API_BASE}/api/consultation/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

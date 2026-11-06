@@ -4,19 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { auth, deriveUserId } from '@/lib/auth';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://telegram-doctor-bot.onrender.com';
-
-async function syncWithBackend(provider: string, email: string, fullName: string, supabaseId: string, avatar: string | null) {
-  try {
-    await fetch(`${API_BASE}/api/auth/social`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, email, name: fullName, provider_id: supabaseId, avatar }),
-    });
-  } catch {}
-}
+import { auth } from '@/lib/auth';
+import { api } from '@/lib/api';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -51,28 +40,21 @@ export default function AuthCallbackPage() {
         }
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
-        const { user }  = session;
-        const email     = user.email ?? '';
-        const fullName  = user.user_metadata?.full_name ?? user.user_metadata?.name ?? email.split('@')[0];
-        const provider  = user.app_metadata?.provider ?? 'google';
-        const avatar    = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
-        const userId    = await deriveUserId(user.id);
-        const isNew     = auth.getUserId() !== userId;
+        // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
+        const data = await api.socialLogin(session.access_token);
+        if (!data?.token || !data?.id) throw new Error('Сервер не подтвердил вход. Попробуйте ещё раз.');
 
         auth.setUser({
-          id:         userId,
-          first_name: fullName.split(' ')[0] || fullName,
-          last_name:  fullName.split(' ').slice(1).join(' ') || undefined,
-          username:   email.split('@')[0],
-          photo_url:  avatar,
+          id:         data.id,
+          first_name: data.first_name || '',
+          last_name:  data.last_name || undefined,
+          username:   (data.email || '').split('@')[0] || undefined,
+          photo_url:  data.photo_url || undefined,
           auth_date:  Math.floor(Date.now() / 1000),
           hash:       '',
-        });
+        }, data.token);
 
-        // Sync with backend in background — don't block login
-        syncWithBackend(provider, email, fullName, user.id, avatar);
-
-        router.push(isNew ? '/onboarding' : '/dashboard');
+        router.push(data.is_new ? '/onboarding' : '/dashboard');
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : undefined;
         setError(message ?? 'Ошибка авторизации');

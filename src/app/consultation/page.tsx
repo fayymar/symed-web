@@ -24,8 +24,8 @@ export default function SymptomsPage() {
 
       // Запускаем консультацию и параллельно проверяем профиль (если залогинен)
       const [data, profileData] = await Promise.all([
-        api.startConsultation(user?.id ?? null, text.trim()),
-        user ? api.getProfile(user.id) : Promise.resolve(null),
+        api.startConsultation(text.trim()),
+        user && auth.isLoggedIn() ? api.getProfile(user.id) : Promise.resolve(null),
       ]);
 
       if (data.red_flag) {

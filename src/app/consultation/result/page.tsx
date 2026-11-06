@@ -14,6 +14,11 @@ interface UrgencyConfig {
 }
 
 function getUrgency(level: string): UrgencyConfig {
+  if (level === 'emergency') return {
+    bg: 'rgba(255,59,48,0.14)', border: 'rgba(255,59,48,0.45)',
+    text: 'var(--s-red)', label: 'Экстренно — вызовите скорую: 103',
+    icon: <AlertTriangle size={18} />,
+  };
   if (level === 'high') return {
     bg: 'rgba(255,59,48,0.08)', border: 'rgba(255,59,48,0.2)',
     text: 'var(--s-red)', label: 'Срочно',
@@ -33,7 +38,8 @@ function getUrgency(level: string): UrgencyConfig {
 
 export default function ResultPage() {
   const router = useRouter();
-  const { result, sessionId } = useConsultation();
+  const { result } = useConsultation();
+  const consultationId = result?.consultationId ?? null;
   const [feedback, setFeedback] = useState<'good' | 'bad' | null>(null);
   const [comingSoon, setComingSoon] = useState(false);
   const isLoggedIn = auth.isLoggedIn();
@@ -148,12 +154,12 @@ export default function ResultPage() {
             <>
               <p className="text-sm mb-4" style={{ color: 'var(--s-secondary)' }}>Была ли рекомендация полезной?</p>
               <div className="flex gap-2 justify-center">
-                <button onClick={() => { setFeedback('good'); if (sessionId) api.saveFeedback(sessionId, 'good').catch(() => {}); }}
+                <button onClick={() => { setFeedback('good'); if (consultationId && isLoggedIn) api.saveFeedback(consultationId, 'good').catch(() => {}); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition"
                   style={{ background: 'rgba(52,199,89,0.1)', color: 'var(--s-green)', border: '1px solid rgba(52,199,89,0.25)' }}>
                   <ThumbsUp size={14} /> Помогло
                 </button>
-                <button onClick={() => { setFeedback('bad'); if (sessionId) api.saveFeedback(sessionId, 'bad').catch(() => {}); }}
+                <button onClick={() => { setFeedback('bad'); if (consultationId && isLoggedIn) api.saveFeedback(consultationId, 'bad').catch(() => {}); }}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition"
                   style={{ background: 'rgba(255,59,48,0.08)', color: 'var(--s-red)', border: '1px solid rgba(255,59,48,0.2)' }}>
                   <ThumbsDown size={14} /> Не помогло
