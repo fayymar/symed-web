@@ -74,9 +74,16 @@ export const auth = {
    * было бы снова получить токен без ввода пароля.
    */
   logout: async () => {
-    // Сначала пробуем отозвать refresh-токен на сервере Supabase, потом в любом
-    // случае удаляем всё локально (auth.clear не зависит от результата запроса).
-    try { await supabase?.auth.signOut(); } catch { /* сеть недоступна */ }
+    // Пробуем отозвать refresh-токен на сервере Supabase, но не дольше 3 секунд:
+    // локальная очистка не должна зависеть от зависшего сетевого запроса.
+    try {
+      if (supabase) {
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
+      }
+    } catch { /* сеть недоступна */ }
     auth.clear();
     window.location.href = '/';
   },
