@@ -12,6 +12,7 @@ export interface TelegramUser {
 
 const USER_KEY = 'symed_user';
 const TOKEN_KEY = 'symed_token';
+const SESSION_IDLE_LIMIT = 86400 * 7; // 7 дней без активности — сессия истекает
 
 export const auth = {
   getUser: (): TelegramUser | null => {
@@ -32,9 +33,22 @@ export const auth = {
     localStorage.setItem(TOKEN_KEY, token);
   },
 
+  /**
+   * Токен бэкенда. Если сессия истекла (7 дней без активности) — очищает всё и
+   * возвращает null. Проверка здесь, а не на отдельных страницах, чтобы ни одна
+   * страница не могла работать с просроченной сессией.
+   */
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    let token: string | null = null;
+    try { token = localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    if (!token) return null;
+    const user = auth.getUser();
+    if (!user || Date.now() / 1000 - user.auth_date >= SESSION_IDLE_LIMIT) {
+      auth.clear();
+      return null;
+    }
+    return token;
   },
 
   /**
@@ -69,6 +83,8 @@ export const auth = {
 
   getUserId: (): number | null => {
     if (typeof window === 'undefined') return null;
+    // Без действующей сессии номера пользователя нет (getToken проверяет срок)
+    if (!auth.getToken()) return null;
     // Try numeric key first (set by 6-digit code auth)
     const numKey = localStorage.getItem('symed_user_id');
     if (numKey) return parseInt(numKey);
@@ -86,12 +102,8 @@ export const auth = {
   isLoggedIn: (): boolean => {
     const user = auth.getUser();
     // Старые сессии без токена считаем разлогиненными — нужен повторный вход
-    if (!user || !auth.getToken()) return false;
-    const age = Date.now() / 1000 - user.auth_date;
-    // 7 дней без активности (auth_date обновляется при активности) — сессия
-    // истекла: очищаем всё, включая токен бэкенда и сессию Supabase.
-    if (age >= 86400 * 7) { auth.clear(); return false; }
-    return true;
+    // getToken() сам очищает просроченную (7 дней без активности) сессию
+    return Boolean(user && auth.getToken());
   },
 
   // Call on user activity to extend session
