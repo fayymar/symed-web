@@ -54,7 +54,7 @@ export default function DashboardPage() {
             <ThemeToggle />
             {user.photo_url && <img src={user.photo_url} alt="" className="w-7 h-7 rounded-full" />}
             <span className="text-sm font-medium" style={{ color: 'var(--s-secondary)' }}>{user.first_name}</span>
-            <button onClick={auth.logout}
+            <button onClick={() => { auth.logout(); }}
               className="w-7 h-7 flex items-center justify-center rounded-full transition"
               style={{ background: 'var(--s-fill-secondary)', color: 'var(--s-secondary)' }}
               title="Выйти">

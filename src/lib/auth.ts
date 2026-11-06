@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export interface TelegramUser {
   id: number;
   first_name: string;
@@ -41,8 +43,14 @@ export const auth = {
     localStorage.removeItem(TOKEN_KEY);
   },
 
-  logout: () => {
+  /**
+   * Выход: удаляем токен бэкенда и завершаем сессию Supabase (Google/Apple/email).
+   * Иначе сессия Supabase осталась бы в браузере, и через /auth/callback можно
+   * было бы снова получить токен без ввода пароля.
+   */
+  logout: async () => {
     auth.clear();
+    try { await supabase?.auth.signOut(); } catch { /* сеть недоступна — локальные данные уже очищены */ }
     window.location.href = '/';
   },
 
