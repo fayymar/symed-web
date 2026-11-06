@@ -32,8 +32,15 @@ export default function AuthCallbackPage() {
         if (e) throw e;
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
-        // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
-        const data = await api.socialLogin(session.access_token);
+        // Сессия Supabase нужна только для обмена на токен бэкенда. Завершаем её
+        // в finally — при любом исходе (успех, ошибка, неверный ответ сервера).
+        let data;
+        try {
+          // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
+          data = await api.socialLogin(session.access_token);
+        } finally {
+          await discardSupabaseSession();
+        }
         if (!data?.token || !data?.id) throw new Error('Сервер не подтвердил вход. Попробуйте ещё раз.');
 
         auth.setUser({
@@ -46,13 +53,11 @@ export default function AuthCallbackPage() {
           hash:       '',
         }, data.token);
 
-        // Сессия Supabase больше не нужна — завершаем её
-        await discardSupabaseSession();
-
         router.push(data.is_new ? '/onboarding' : '/dashboard');
       } catch (e: unknown) {
-        // Вход не завершён — не оставляем в браузере частичную сессию Supabase
-        auth.clear();
+        // Ничего не очищаем: сессию Supabase этого входа уже завершил finally,
+        // а уже вошедшего пользователя нельзя разлогинивать сторонней ссылкой
+        // на /auth/callback.
         const message = e instanceof Error ? e.message : undefined;
         setError(message ?? 'Ошибка авторизации');
       }

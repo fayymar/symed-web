@@ -101,22 +101,24 @@ export default function AuthPage() {
           // Сессию получили прямо здесь (пароль проверен) — сразу обмениваем её на
           // токен бэкенда. Через /auth/callback не идём: он принимает только
           // одноразовый код из редиректа (PKCE).
-          const resp = await api.socialLogin(data.session.access_token);
-          if (!resp?.token || !resp?.id) { auth.clear(); setEmailError('Сервер не подтвердил вход. Попробуйте ещё раз.'); return; }
+          // Сессия Supabase нужна только для обмена — завершаем её при любом исходе
+          let resp;
+          try {
+            resp = await api.socialLogin(data.session.access_token);
+          } finally {
+            await discardSupabaseSession();
+          }
+          if (!resp?.token || !resp?.id) { setEmailError('Сервер не подтвердил вход. Попробуйте ещё раз.'); return; }
           auth.setUser({
             id: resp.id, first_name: resp.first_name || '', last_name: resp.last_name || undefined,
             username: (resp.email || '').split('@')[0] || undefined, photo_url: resp.photo_url || undefined,
             auth_date: Math.floor(Date.now() / 1000), hash: '',
           }, resp.token);
-          // Сессия Supabase больше не нужна — завершаем её
-          await discardSupabaseSession();
           setStatus('success');
           setTimeout(() => router.push(resp.is_new ? '/onboarding' : '/dashboard'), 800);
         }
       }
     } catch (e) {
-      // Вход не завершён — не оставляем в браузере частичную сессию Supabase
-      auth.clear();
       setEmailError(e instanceof Error ? e.message : 'Ошибка входа. Попробуйте ещё раз.');
     } finally { setEmailLoading(false); }
   };
