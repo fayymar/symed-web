@@ -48,6 +48,8 @@ export default function AuthCallbackPage() {
 
         router.push(data.is_new ? '/onboarding' : '/dashboard');
       } catch (e: unknown) {
+        // Вход не завершён — не оставляем в браузере частичную сессию Supabase
+        auth.clear();
         const message = e instanceof Error ? e.message : undefined;
         setError(message ?? 'Ошибка авторизации');
       }
