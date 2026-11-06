@@ -1,5 +1,31 @@
 import { supabase } from './supabase';
 
+/**
+ * Сессия Supabase (Google/Apple/email) нужна сайту только на мгновение — чтобы
+ * обменять её на токен бэкенда. Сразу после этого завершаем её: отзываем на
+ * сервере (scope 'local' — только эту сессию, другие устройства не трогаем)
+ * и удаляем из браузера. Так в localStorage никогда не лежит действующая
+ * сессия Supabase, которую можно было бы использовать после выхода.
+ */
+export async function discardSupabaseSession(): Promise<void> {
+  try {
+    if (supabase) {
+      await Promise.race([
+        supabase.auth.signOut({ scope: 'local' }).catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+    }
+  } catch { /* сеть недоступна — всё равно удаляем локально */ }
+  removeSupabaseKeys();
+}
+
+function removeSupabaseKeys(): void {
+  if (typeof window === 'undefined') return;
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith('sb-')) localStorage.removeItem(key);
+  }
+}
+
 export interface TelegramUser {
   id: number;
   first_name: string;
@@ -63,28 +89,14 @@ export const auth = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('symed_user_id');
     localStorage.removeItem(TOKEN_KEY);
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('sb-')) localStorage.removeItem(key);
-    }
+    removeSupabaseKeys();
   },
 
-  /**
-   * Выход: удаляем токен бэкенда и завершаем сессию Supabase (Google/Apple/email).
-   * Иначе сессия Supabase осталась бы в браузере, и через /auth/callback можно
-   * было бы снова получить токен без ввода пароля.
-   */
+  /** Выход: полностью очищает сессию в этом браузере. */
   logout: async () => {
-    // Пробуем отозвать refresh-токен на сервере Supabase, но не дольше 3 секунд:
-    // локальная очистка не должна зависеть от зависшего сетевого запроса.
-    try {
-      if (supabase) {
-        // signOut() может сначала обновить истёкшую сессию и записать её в
-        // localStorage — поэтому после его завершения (когда бы оно ни случилось)
-        // очищаем ещё раз.
-        const signOut = supabase.auth.signOut().catch(() => undefined).finally(() => auth.clear());
-        await Promise.race([signOut, new Promise((resolve) => setTimeout(resolve, 3000))]);
-      }
-    } catch { /* сеть недоступна */ }
+    // Сессия Supabase завершается сразу после входа (discardSupabaseSession),
+    // поэтому при выходе достаточно локальной очистки — без сетевых запросов,
+    // которые могли бы обновить и записать сессию обратно.
     auth.clear();
     window.location.href = '/';
   },

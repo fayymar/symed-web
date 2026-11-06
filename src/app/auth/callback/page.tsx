@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { auth } from '@/lib/auth';
+import { auth, discardSupabaseSession } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 export default function AuthCallbackPage() {
@@ -45,6 +45,9 @@ export default function AuthCallbackPage() {
           auth_date:  Math.floor(Date.now() / 1000),
           hash:       '',
         }, data.token);
+
+        // Сессия Supabase больше не нужна — завершаем её
+        await discardSupabaseSession();
 
         router.push(data.is_new ? '/onboarding' : '/dashboard');
       } catch (e: unknown) {

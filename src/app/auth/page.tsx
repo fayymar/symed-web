@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Send, Loader2, AlertCircle, Mail, Eye, EyeOff } from 'lucide-react';
-import { auth, TelegramUser } from '@/lib/auth';
+import { auth, discardSupabaseSession, TelegramUser } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { supabase, SUPABASE_CONFIGURED } from '@/lib/supabase';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -108,6 +108,8 @@ export default function AuthPage() {
             username: (resp.email || '').split('@')[0] || undefined, photo_url: resp.photo_url || undefined,
             auth_date: Math.floor(Date.now() / 1000), hash: '',
           }, resp.token);
+          // Сессия Supabase больше не нужна — завершаем её
+          await discardSupabaseSession();
           setStatus('success');
           setTimeout(() => router.push(resp.is_new ? '/onboarding' : '/dashboard'), 800);
         }
