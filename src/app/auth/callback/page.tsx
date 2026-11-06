@@ -20,24 +20,16 @@ export default function AuthCallbackPage() {
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
 
-        // PKCE exchange
+        // PKCE: обмениваем одноразовый code на сессию. Токены из #hash ссылки
+        // не принимаем — так нельзя подсунуть чужую сессию готовой ссылкой.
         const code = params.get('code');
         if (code) {
           const { error: e } = await supabase!.auth.exchangeCodeForSession(code);
           if (e) throw e;
         }
+        if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
 
-        // Get session
-        let { data: { session } } = await supabase!.auth.getSession();
-
-        if (!session && window.location.hash) {
-          session = await new Promise((resolve, reject) => {
-            const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
-              if (s) { subscription.unsubscribe(); resolve(s); }
-            });
-            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Timeout')); }, 8000);
-          });
-        }
+        const { data: { session } } = await supabase!.auth.getSession();
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
         // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
