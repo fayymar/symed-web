@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Send, Loader2, AlertCircle, Mail, Eye, EyeOff } from 'lucide-react';
-import { auth, TelegramUser } from '@/lib/auth';
+import { auth, discardSupabaseSession, TelegramUser } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { supabase, SUPABASE_CONFIGURED } from '@/lib/supabase';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -98,10 +98,28 @@ export default function AuthPage() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) { setEmailError(error.message); return; }
         if (data.session) {
-          // Redirect to callback to complete registration
-          window.location.href = '/auth/callback';
+          // Сессию получили прямо здесь (пароль проверен) — сразу обмениваем её на
+          // токен бэкенда. Через /auth/callback не идём: он принимает только
+          // одноразовый код из редиректа (PKCE).
+          // Сессия Supabase нужна только для обмена — завершаем её при любом исходе
+          let resp;
+          try {
+            resp = await api.socialLogin(data.session.access_token);
+          } finally {
+            await discardSupabaseSession();
+          }
+          if (!resp?.token || !resp?.id) { setEmailError('Сервер не подтвердил вход. Попробуйте ещё раз.'); return; }
+          auth.setUser({
+            id: resp.id, first_name: resp.first_name || '', last_name: resp.last_name || undefined,
+            username: (resp.email || '').split('@')[0] || undefined, photo_url: resp.photo_url || undefined,
+            auth_date: Math.floor(Date.now() / 1000), hash: '',
+          }, resp.token);
+          setStatus('success');
+          setTimeout(() => router.push(resp.is_new ? '/onboarding' : '/dashboard'), 800);
         }
       }
+    } catch (e) {
+      setEmailError(e instanceof Error ? e.message : 'Ошибка входа. Попробуйте ещё раз.');
     } finally { setEmailLoading(false); }
   };
 

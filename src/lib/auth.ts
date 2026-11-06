@@ -1,3 +1,31 @@
+import { supabase } from './supabase';
+
+/**
+ * Сессия Supabase (Google/Apple/email) нужна сайту только на мгновение — чтобы
+ * обменять её на токен бэкенда. Сразу после этого завершаем её: отзываем на
+ * сервере (scope 'local' — только эту сессию, другие устройства не трогаем)
+ * и удаляем из браузера. Так в localStorage никогда не лежит действующая
+ * сессия Supabase, которую можно было бы использовать после выхода.
+ */
+export async function discardSupabaseSession(): Promise<void> {
+  try {
+    if (supabase) {
+      await Promise.race([
+        supabase.auth.signOut({ scope: 'local' }).catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+    }
+  } catch { /* сеть недоступна — всё равно удаляем локально */ }
+  removeSupabaseKeys();
+}
+
+function removeSupabaseKeys(): void {
+  if (typeof window === 'undefined') return;
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith('sb-')) localStorage.removeItem(key);
+  }
+}
+
 export interface TelegramUser {
   id: number;
   first_name: string;
@@ -10,6 +38,7 @@ export interface TelegramUser {
 
 const USER_KEY = 'symed_user';
 const TOKEN_KEY = 'symed_token';
+const SESSION_IDLE_LIMIT = 86400 * 7; // 7 дней без активности — сессия истекает
 
 export const auth = {
   getUser: (): TelegramUser | null => {
@@ -30,24 +59,52 @@ export const auth = {
     localStorage.setItem(TOKEN_KEY, token);
   },
 
+  /**
+   * Токен бэкенда. Если сессия истекла (7 дней без активности) — очищает всё и
+   * возвращает null. Проверка здесь, а не на отдельных страницах, чтобы ни одна
+   * страница не могла работать с просроченной сессией.
+   */
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    let token: string | null = null;
+    try { token = localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    if (!token) return null;
+    const user = auth.getUser();
+    if (!user || Date.now() / 1000 - user.auth_date >= SESSION_IDLE_LIMIT) {
+      auth.clear();
+      return null;
+    }
+    return token;
   },
 
+  /**
+   * Полностью завершает сессию в этом браузере: токен бэкенда, данные
+   * пользователя и сохранённую сессию Supabase (sb-*). Удаление локальное и
+   * безусловное — не зависит от сети. Вызывается при выходе, ответе 401 и
+   * истечении сессии, чтобы на общем компьютере следующий человек не мог
+   * получить доступ к чужим медицинским данным.
+   */
   clear: () => {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('symed_user_id');
     localStorage.removeItem(TOKEN_KEY);
+    removeSupabaseKeys();
   },
 
-  logout: () => {
+  /** Выход: полностью очищает сессию в этом браузере. */
+  logout: async () => {
+    // Сессия Supabase завершается сразу после входа (discardSupabaseSession),
+    // поэтому при выходе достаточно локальной очистки — без сетевых запросов,
+    // которые могли бы обновить и записать сессию обратно.
     auth.clear();
     window.location.href = '/';
   },
 
   getUserId: (): number | null => {
     if (typeof window === 'undefined') return null;
+    // Без действующей сессии номера пользователя нет (getToken проверяет срок)
+    if (!auth.getToken()) return null;
     // Try numeric key first (set by 6-digit code auth)
     const numKey = localStorage.getItem('symed_user_id');
     if (numKey) return parseInt(numKey);
@@ -65,10 +122,8 @@ export const auth = {
   isLoggedIn: (): boolean => {
     const user = auth.getUser();
     // Старые сессии без токена считаем разлогиненными — нужен повторный вход
-    if (!user || !auth.getToken()) return false;
-    const age = Date.now() / 1000 - user.auth_date;
-    // 7 days for OAuth users (auth_date is set at login and refreshed on activity)
-    return age < 86400 * 7;
+    // getToken() сам очищает просроченную (7 дней без активности) сессию
+    return Boolean(user && auth.getToken());
   },
 
   // Call on user activity to extend session

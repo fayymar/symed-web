@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { auth } from '@/lib/auth';
+import { auth, discardSupabaseSession } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 export default function AuthCallbackPage() {
@@ -20,28 +20,27 @@ export default function AuthCallbackPage() {
         const urlError = params.get('error_description') || params.get('error');
         if (urlError) throw new Error(urlError);
 
-        // PKCE exchange
+        // PKCE: обмениваем одноразовый code на сессию. Токены из #hash ссылки
+        // не принимаем — так нельзя подсунуть чужую сессию готовой ссылкой.
+        // Ранее сохранённую сессию НЕ подхватываем: вход завершается только свежим
+        // кодом из этого редиректа, иначе на общем компьютере можно было бы
+        // открыть /auth/callback и попасть в аккаунт предыдущего пользователя.
         const code = params.get('code');
-        if (code) {
-          const { error: e } = await supabase!.auth.exchangeCodeForSession(code);
-          if (e) throw e;
-        }
-
-        // Get session
-        let { data: { session } } = await supabase!.auth.getSession();
-
-        if (!session && window.location.hash) {
-          session = await new Promise((resolve, reject) => {
-            const { data: { subscription } } = supabase!.auth.onAuthStateChange((_evt, s) => {
-              if (s) { subscription.unsubscribe(); resolve(s); }
-            });
-            setTimeout(() => { subscription.unsubscribe(); reject(new Error('Timeout')); }, 8000);
-          });
-        }
+        if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+        if (!code) throw new Error('Сессия не получена. Попробуйте ещё раз.');
+        const { data: { session }, error: e } = await supabase!.auth.exchangeCodeForSession(code);
+        if (e) throw e;
         if (!session) throw new Error('Сессия не получена. Попробуйте ещё раз.');
 
-        // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
-        const data = await api.socialLogin(session.access_token);
+        // Сессия Supabase нужна только для обмена на токен бэкенда. Завершаем её
+        // в finally — при любом исходе (успех, ошибка, неверный ответ сервера).
+        let data;
+        try {
+          // Бэкенд сам проверяет access_token у Supabase и выдаёт свой токен сессии
+          data = await api.socialLogin(session.access_token);
+        } finally {
+          await discardSupabaseSession();
+        }
         if (!data?.token || !data?.id) throw new Error('Сервер не подтвердил вход. Попробуйте ещё раз.');
 
         auth.setUser({
@@ -56,6 +55,9 @@ export default function AuthCallbackPage() {
 
         router.push(data.is_new ? '/onboarding' : '/dashboard');
       } catch (e: unknown) {
+        // Ничего не очищаем: сессию Supabase этого входа уже завершил finally,
+        // а уже вошедшего пользователя нельзя разлогинивать сторонней ссылкой
+        // на /auth/callback.
         const message = e instanceof Error ? e.message : undefined;
         setError(message ?? 'Ошибка авторизации');
       }
