@@ -128,8 +128,8 @@ export default function ProfilePage() {
   };
 
   async function handleLinkTelegram() {
-    const clean = linkCode.replace(/\D/g, '');
-    if (clean.length !== 8) { setLinkError('Введите 8 цифр из сообщения бота'); return; }
+    const clean = linkCode.replace(/[^0-9A-ZА-Яа-яa-z]/g, '');
+    if (clean.length !== 8) { setLinkError('Введите 8 символов кода из сообщения бота'); return; }
     setLinkError(''); setLinkLoading(true);
     try {
       await api.linkTelegram(clean);
@@ -271,7 +271,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', lineHeight: 1.5 }}>
                 Свяжите Telegram-аккаунт, чтобы история консультаций и профиль были общими на сайте и в боте.
-                Откройте бота — он пришлёт код из 8 цифр — и введите его ниже.
+                Откройте бота — он пришлёт код из 8 символов — и введите его ниже.
               </p>
               <a href="https://t.me/medgg_bot?start=link"
                 target="_blank" rel="noopener noreferrer"
@@ -287,9 +287,9 @@ export default function ProfilePage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   value={linkCode}
-                  onChange={(e) => setLinkCode(e.target.value.replace(/[^\d ]/g, '').slice(0, 9))}
+                  onChange={(e) => setLinkCode(e.target.value.toUpperCase().replace(/[^0-9A-ZА-Я -]/g, '').slice(0, 9))}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleLinkTelegram(); }}
-                  inputMode="numeric" autoComplete="one-time-code" placeholder="1234 5678"
+                  autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoComplete="one-time-code" placeholder="K7RM-4QXA"
                   aria-label="Код из Telegram"
                   style={{ ...inp, flex: 1, fontFamily: 'monospace', letterSpacing: '3px', textAlign: 'center' }}
                 />

@@ -42,8 +42,8 @@ export default function AuthPage() {
   const botLink = `https://t.me/${BOT_USERNAME}?start=login`;
 
   const submitCode = async () => {
-    const clean = code.replace(/\D/g, '');
-    if (clean.length !== 8) { setErrorMsg('Введите 8 цифр из сообщения бота'); return; }
+    const clean = code.replace(/[^0-9A-ZА-Яа-яa-z]/g, '');
+    if (clean.length !== 8) { setErrorMsg('Введите 8 символов кода из сообщения бота'); return; }
     setErrorMsg(''); setCodeLoading(true);
     try {
       const data = await api.loginWithCode(clean);
@@ -219,7 +219,7 @@ export default function AuthPage() {
               {tab === 'telegram' && (
                 <div style={card}>
                   <p style={{ fontSize: '14px', color: 'var(--s-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
-                    1. Откройте бота — он пришлёт код из 8 цифр.<br />
+                    1. Откройте бота — он пришлёт код из 8 символов.<br />
                     2. Введите код ниже.
                   </p>
 
@@ -232,9 +232,9 @@ export default function AuthPage() {
 
                   <input
                     value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, '').slice(0, 9))}
+                    onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-ZА-Я -]/g, '').slice(0, 9))}
                     onKeyDown={(e) => { if (e.key === 'Enter') submitCode(); }}
-                    inputMode="numeric" autoComplete="one-time-code" placeholder="1234 5678"
+                    autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoComplete="one-time-code" placeholder="K7RM-4QXA"
                     aria-label="Код из Telegram"
                     style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontSize: '26px',
                       fontFamily: 'monospace', fontWeight: 700, letterSpacing: '4px', padding: '12px',
