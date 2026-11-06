@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Check, Send, Loader2, AlertCircle, Mail, Eye, EyeOff } from 'lucide-react';
+import { Check, Send, Loader2, AlertCircle, Mail, Eye, EyeOff } from 'lucide-react';
 import { auth, TelegramUser } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { supabase, SUPABASE_CONFIGURED } from '@/lib/supabase';
@@ -23,12 +23,9 @@ export default function AuthPage() {
   const [tab, setTab]           = useState<Tab>('telegram');
   const [status, setStatus]     = useState<Status>('idle');
   const [code, setCode]         = useState('');
-  const [copied, setCopied]     = useState(false);
+  const [codeLoading, setCodeLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentUser, setCurrentUser] = useState<TelegramUser | null>(() => (auth.isLoggedIn() ? auth.getUser() : null));
-  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const codeRef  = useRef('');
-  const secretRef = useRef('');
 
   // Email state
   const [emailMode, setEmailMode]       = useState<EmailMode>('login');
@@ -39,42 +36,28 @@ export default function AuthPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError]     = useState('');
 
-  // ── Telegram code ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (tab !== 'telegram') return;
-    // Код генерирует сервер и вместе с ним отдаёт секрет для проверки статуса
-    api.requestAuthCode()
-      .then(({ code: newCode, poll_secret }) => {
-        setCode(newCode); codeRef.current = newCode; secretRef.current = poll_secret;
-        setTimeout(() => setStatus('waiting'), 8000);
-      })
-      .catch(() => setErrorMsg('Не удалось связаться с сервером.'));
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [router, tab]);
+  // ── Telegram: код выдаёт бот, пользователь вводит его здесь ─────────
+  // Код привязан к Telegram-аккаунту, который его получил, поэтому чужая
+  // ссылка на бота не может залогинить кого-то под вами.
+  const botLink = `https://t.me/${BOT_USERNAME}?start=login`;
 
-  useEffect(() => {
-    if (status !== 'waiting') return;
-    pollRef.current = setInterval(async () => {
-      try {
-        const data = await api.checkAuthStatus(codeRef.current, secretRef.current);
-        if (data.verified && data.id && data.token) {
-          clearInterval(pollRef.current!);
-          auth.setUser({ id: data.id, first_name: data.first_name || '', last_name: data.last_name,
-            username: data.username, photo_url: data.photo_url, auth_date: data.auth_date, hash: '' }, data.token);
-          setStatus('success');
-          setTimeout(() => router.push('/dashboard'), 800);
-        }
-      } catch {}
-    }, 2000);
-    const t = setTimeout(() => { clearInterval(pollRef.current!); setStatus('error'); setErrorMsg('Время вышло.'); }, 600_000);
-    return () => { clearInterval(pollRef.current!); clearTimeout(t); };
-  }, [status, router]);
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  const submitCode = async () => {
+    const clean = code.replace(/\D/g, '');
+    if (clean.length !== 8) { setErrorMsg('Введите 8 цифр из сообщения бота'); return; }
+    setErrorMsg(''); setCodeLoading(true);
+    try {
+      const data = await api.loginWithCode(clean);
+      auth.setUser({ id: data.id, first_name: data.first_name || '', last_name: data.last_name || undefined,
+        username: data.username || undefined, photo_url: data.photo_url || undefined,
+        auth_date: Math.floor(Date.now() / 1000), hash: '' }, data.token);
+      setStatus('success');
+      setTimeout(() => router.push('/dashboard'), 800);
+    } catch (e) {
+      setErrorMsg(e instanceof Error && e.message !== 'invalid_code' ? e.message : 'Код неверный или истёк');
+    } finally {
+      setCodeLoading(false);
+    }
   };
-
-  const deepLink = code ? `https://t.me/${BOT_USERNAME}?start=auth_${code}` : '#';
 
   // ── Google OAuth ───────────────────────────────────────────────────
   const handleGoogle = async () => {
@@ -236,48 +219,43 @@ export default function AuthPage() {
               {tab === 'telegram' && (
                 <div style={card}>
                   <p style={{ fontSize: '14px', color: 'var(--s-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
-                    Нажмите кнопку — Telegram откроется и вы войдёте автоматически. Либо скопируйте код и отправьте боту вручную.
+                    1. Откройте бота — он пришлёт код из 8 цифр.<br />
+                    2. Введите код ниже.
                   </p>
 
-                  <a href={deepLink} target="_blank" rel="noopener noreferrer"
+                  <a href={botLink} target="_blank" rel="noopener noreferrer"
                     style={{ ...btnPrimary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      textDecoration: 'none', marginBottom: '16px', opacity: code ? 1 : 0.5, pointerEvents: code ? 'auto' : 'none' }}>
+                      textDecoration: 'none', marginBottom: '16px' }}>
                     <Send size={15} />
-                    Войти через Telegram
+                    Получить код в Telegram
                   </a>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--s-border)' }} />
-                    <span style={{ fontSize: '12px', color: 'var(--s-text-muted)' }}>или код вручную</span>
-                    <div style={{ flex: 1, height: 1, background: 'var(--s-border)' }} />
-                  </div>
+                  <input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, '').slice(0, 9))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') submitCode(); }}
+                    inputMode="numeric" autoComplete="one-time-code" placeholder="1234 5678"
+                    aria-label="Код из Telegram"
+                    style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontSize: '26px',
+                      fontFamily: 'monospace', fontWeight: 700, letterSpacing: '4px', padding: '12px',
+                      borderRadius: '14px', border: '1px solid var(--s-border)', background: 'var(--s-fill)',
+                      color: 'var(--s-text)', outline: 'none', marginBottom: '10px' }}
+                  />
 
-                  <div style={{ background: 'var(--s-fill)', borderRadius: '14px', padding: '16px', textAlign: 'center', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '32px', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '6px', color: 'var(--s-text)' }}>
-                      {code || '------'}
-                    </div>
-                    <button onClick={copyCode} style={{ marginTop: '10px', background: copied ? '#34c759' : 'var(--s-surface)',
-                      color: copied ? '#fff' : 'var(--s-text)', border: '1px solid var(--s-border)',
-                      borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      {copied ? <Check size={12} /> : <Copy size={12} />}
-                      {copied ? 'Скопировано' : 'Копировать'}
-                    </button>
-                  </div>
+                  <button onClick={submitCode} disabled={codeLoading}
+                    style={{ ...btnPrimary, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: '8px', opacity: codeLoading ? 0.6 : 1 }}>
+                    {codeLoading && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
+                    Войти
+                  </button>
 
-                  {status === 'waiting' && !errorMsg && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', color: 'var(--s-text-muted)' }}>
-                      <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: 'var(--s-primary)' }} />
-                      Ожидаем подтверждения…
-                    </div>
-                  )}
                   {errorMsg && (
                     <div style={{ fontSize: '13px', color: '#ff3b30', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
                       <AlertCircle size={13} /> {errorMsg}
                     </div>
                   )}
                   <p style={{ fontSize: '11px', color: 'var(--s-text-muted)', textAlign: 'center', marginTop: '12px' }}>
-                    Код действителен 10 минут
+                    Код действует 5 минут. Никому его не сообщайте.
                   </p>
                 </div>
               )}

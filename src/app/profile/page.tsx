@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -76,10 +76,11 @@ export default function ProfilePage() {
   const [error,   setError]   = useState('');
 
   // Telegram linking
+  // Код выдаёт бот (/login) владельцу Telegram, он вводит его здесь
   const [linkCode,    setLinkCode]    = useState('');
   const [linkStatus,  setLinkStatus]  = useState<'idle' | 'waiting' | 'linked'>('idle');
   const [linkLoading, setLinkLoading] = useState(false);
-  const linkPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [linkError,   setLinkError]   = useState('');
 
   useEffect(() => {
     if (!auth.isLoggedIn()) { router.push('/auth'); return; }
@@ -103,7 +104,6 @@ export default function ProfilePage() {
       }
     }).catch(() => {}).finally(() => setLoading(false));
 
-    return () => { if (linkPollRef.current) clearInterval(linkPollRef.current); };
   }, [router]);
 
   const set    = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -128,22 +128,15 @@ export default function ProfilePage() {
   };
 
   async function handleLinkTelegram() {
-    const userId = auth.getUserId();
-    if (!userId) return;
-    setLinkLoading(true);
+    const clean = linkCode.replace(/\D/g, '');
+    if (clean.length !== 8) { setLinkError('Введите 8 цифр из сообщения бота'); return; }
+    setLinkError(''); setLinkLoading(true);
     try {
-      const data = await api.requestLinkCode();
-      if (!data.code) throw new Error('No code');
-      setLinkCode(data.code);
-      setLinkStatus('waiting');
-      const poll = setInterval(async () => {
-        try {
-          const s = await api.checkLinkStatus(data.code);
-          if (s.verified) { clearInterval(poll); setLinkStatus('linked'); }
-        } catch {}
-      }, 3000);
-      linkPollRef.current = poll;
-    } catch (e) { console.error('Link error:', e); }
+      await api.linkTelegram(clean);
+      setLinkStatus('linked');
+    } catch (e) {
+      setLinkError(e instanceof Error && e.message !== 'invalid_code' ? e.message : 'Код неверный или истёк');
+    }
     setLinkLoading(false);
   }
 
@@ -274,46 +267,52 @@ export default function ProfilePage() {
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--s-text)' }}>Подключить Telegram</span>
           </div>
 
-          {linkStatus === 'idle' && (
-            <>
-              <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', marginBottom: 14, lineHeight: 1.5 }}>
-                Свяжите Telegram-аккаунт, чтобы история консультаций и профиль были общими на сайте и в боте.
-              </p>
-              <button onClick={handleLinkTelegram} disabled={linkLoading} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '11px 20px', borderRadius: 12,
-                border: '1.5px solid var(--s-primary)', background: 'transparent',
-                color: 'var(--s-primary)', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-              }}>
-                {linkLoading
-                  ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <Link2 size={16} />}
-                Получить код привязки
-              </button>
-            </>
-          )}
-
-          {linkStatus === 'waiting' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {linkStatus !== 'linked' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <p style={{ fontSize: 13, color: 'var(--s-text-secondary)', lineHeight: 1.5 }}>
-                Нажмите кнопку — откроется Telegram, бот автоматически выполнит привязку.
+                Свяжите Telegram-аккаунт, чтобы история консультаций и профиль были общими на сайте и в боте.
+                Откройте бота — он пришлёт код из 8 цифр — и введите его ниже.
               </p>
-              <a href={`https://t.me/medgg_bot?start=link_${linkCode}`}
+              <a href="https://t.me/medgg_bot?start=link"
                 target="_blank" rel="noopener noreferrer"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 10,
-                  padding: '13px 20px', borderRadius: 14,
+                  display: 'inline-flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+                  padding: '11px 20px', borderRadius: 12,
                   background: '#229ED9', color: '#fff',
-                  fontWeight: 700, fontSize: 15, textDecoration: 'none',
-                  boxShadow: '0 2px 12px rgba(34,158,217,0.35)',
+                  fontWeight: 600, fontSize: 14, textDecoration: 'none',
                 }}>
-                <MessageCircle size={18} />
-                Привязать через Telegram
+                <MessageCircle size={16} />
+                Получить код в Telegram
               </a>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--s-text-secondary)', fontSize: 13 }}>
-                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--s-primary)' }} />
-                Ожидаем подтверждения…
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={linkCode}
+                  onChange={(e) => setLinkCode(e.target.value.replace(/[^\d ]/g, '').slice(0, 9))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleLinkTelegram(); }}
+                  inputMode="numeric" autoComplete="one-time-code" placeholder="1234 5678"
+                  aria-label="Код из Telegram"
+                  style={{ ...inp, flex: 1, fontFamily: 'monospace', letterSpacing: '3px', textAlign: 'center' }}
+                />
+                <button onClick={handleLinkTelegram} disabled={linkLoading} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '10px 18px', borderRadius: 12,
+                  border: '1.5px solid var(--s-primary)', background: 'transparent',
+                  color: 'var(--s-primary)', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}>
+                  {linkLoading
+                    ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    : <Link2 size={16} />}
+                  Привязать
+                </button>
               </div>
+              {linkError && (
+                <div style={{ fontSize: 13, color: '#ff3b30', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <AlertCircle size={13} /> {linkError}
+                </div>
+              )}
+              <p style={{ fontSize: 11, color: 'var(--s-text-muted)' }}>
+                Код действует 5 минут. Никому его не сообщайте.
+              </p>
             </div>
           )}
 

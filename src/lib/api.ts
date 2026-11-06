@@ -92,12 +92,13 @@ export const api = {
   getHealthMetrics: (userId: number, type?: string) =>
     apiFetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`),
 
-  // Код входа генерирует сервер; poll_secret нужен, чтобы узнать результат входа
-  requestAuthCode: (): Promise<{ code: string; poll_secret: string; expires_in: number }> =>
-    apiFetch(`${API_BASE}/api/auth/request`, { method: 'POST' }),
-
-  checkAuthStatus: (code: string, pollSecret: string) =>
-    apiFetch(`${API_BASE}/api/auth/status/${code}?secret=${encodeURIComponent(pollSecret)}`),
+  // Вход по коду, который бот прислал пользователю в Telegram (/login)
+  loginWithCode: (code: string) =>
+    apiFetch(`${API_BASE}/api/auth/code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }),
 
   // Вход через Supabase (Google/Apple/email): бэкенд сам проверяет access_token
   socialLogin: (accessToken: string) =>
@@ -115,11 +116,13 @@ export const api = {
       body: JSON.stringify({ init_data: initData }),
     }),
 
-  requestLinkCode: () =>
-    apiFetch(`${API_BASE}/api/auth/link-request`, { method: 'POST' }),
-
-  checkLinkStatus: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/link-status/${code}`),
+  // Привязать Telegram к текущему аккаунту кодом из бота
+  linkTelegram: (code: string) =>
+    apiFetch(`${API_BASE}/api/auth/link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }),
 
   saveFeedback: (consultationId: number, rating: 'good' | 'bad') =>
     apiFetch(`${API_BASE}/api/consultation/feedback`, {
