@@ -14,8 +14,6 @@ const CALLBACK_URL = typeof window !== 'undefined'
   ? `${window.location.origin}/auth/callback`
   : '';
 
-function generateCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
-
 type Tab    = 'telegram' | 'email' | 'google' | 'apple';
 type Status = 'idle' | 'waiting' | 'success' | 'error';
 type EmailMode = 'login' | 'register';
@@ -30,6 +28,7 @@ export default function AuthPage() {
   const [currentUser, setCurrentUser] = useState<TelegramUser | null>(() => (auth.isLoggedIn() ? auth.getUser() : null));
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const codeRef  = useRef('');
+  const secretRef = useRef('');
 
   // Email state
   const [emailMode, setEmailMode]       = useState<EmailMode>('login');
@@ -43,10 +42,12 @@ export default function AuthPage() {
   // ── Telegram code ──────────────────────────────────────────────────
   useEffect(() => {
     if (tab !== 'telegram') return;
-    const newCode = generateCode();
-    setCode(newCode); codeRef.current = newCode;
-    api.requestAuthCode(newCode)
-      .then(() => setTimeout(() => setStatus('waiting'), 8000))
+    // Код генерирует сервер и вместе с ним отдаёт секрет для проверки статуса
+    api.requestAuthCode()
+      .then(({ code: newCode, poll_secret }) => {
+        setCode(newCode); codeRef.current = newCode; secretRef.current = poll_secret;
+        setTimeout(() => setStatus('waiting'), 8000);
+      })
       .catch(() => setErrorMsg('Не удалось связаться с сервером.'));
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router, tab]);
@@ -55,11 +56,11 @@ export default function AuthPage() {
     if (status !== 'waiting') return;
     pollRef.current = setInterval(async () => {
       try {
-        const data = await api.checkAuthStatus(codeRef.current);
-        if (data.verified && data.id) {
+        const data = await api.checkAuthStatus(codeRef.current, secretRef.current);
+        if (data.verified && data.id && data.token) {
           clearInterval(pollRef.current!);
           auth.setUser({ id: data.id, first_name: data.first_name || '', last_name: data.last_name,
-            username: data.username, photo_url: data.photo_url, auth_date: data.auth_date, hash: '' });
+            username: data.username, photo_url: data.photo_url, auth_date: data.auth_date, hash: '' }, data.token);
           setStatus('success');
           setTimeout(() => router.push('/dashboard'), 800);
         }

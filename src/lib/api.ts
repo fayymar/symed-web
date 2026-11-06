@@ -1,7 +1,23 @@
+import { auth } from './auth';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://telegram-doctor-bot.onrender.com';
 
+/**
+ * Все запросы к бэкенду идут через эту функцию: она добавляет токен сессии
+ * (Authorization: Bearer). Если токен истёк или недействителен (401) —
+ * выходим из аккаунта и отправляем на страницу входа.
+ */
 async function apiFetch(url: string, options?: RequestInit) {
-  const res = await fetch(url, options);
+  const headers = new Headers(options?.headers);
+  const token = auth.getToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401 && token) {
+    auth.clear();
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+      window.location.href = '/auth';
+    }
+  }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try { const j = await res.json(); msg = j.error || msg; } catch {}
@@ -21,18 +37,19 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  startConsultation: (userId: number | null, symptoms: string) =>
+  // Пользователь определяется по токену; без токена консультация идёт в гостевом режиме
+  startConsultation: (symptoms: string) =>
     apiFetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...(userId ? { user_id: userId } : {}), symptoms }),
+      body: JSON.stringify({ symptoms }),
     }),
 
-  sendAnswers: (sessionId: string, userId: number | null, answers: string[]) =>
+  sendAnswers: (sessionId: string, answers: string[]) =>
     apiFetch(`${API_BASE}/api/consultation/answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, ...(userId ? { user_id: userId } : {}), answers }),
+      body: JSON.stringify({ session_id: sessionId, answers }),
     }),
 
   sendDuration: (sessionId: string, duration: string) =>
@@ -75,27 +92,28 @@ export const api = {
   getHealthMetrics: (userId: number, type?: string) =>
     apiFetch(`${API_BASE}/api/health/metrics/${userId}${type ? `?type=${type}` : ''}`),
 
-  requestAuthCode: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/request`, {
+  // Код входа генерирует сервер; poll_secret нужен, чтобы узнать результат входа
+  requestAuthCode: (): Promise<{ code: string; poll_secret: string; expires_in: number }> =>
+    apiFetch(`${API_BASE}/api/auth/request`, { method: 'POST' }),
+
+  checkAuthStatus: (code: string, pollSecret: string) =>
+    apiFetch(`${API_BASE}/api/auth/status/${code}?secret=${encodeURIComponent(pollSecret)}`),
+
+  // Вход через Supabase (Google/Apple/email): бэкенд сам проверяет access_token
+  socialLogin: (accessToken: string) =>
+    apiFetch(`${API_BASE}/api/auth/social`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ access_token: accessToken }),
     }),
 
-  checkAuthStatus: (code: string) =>
-    apiFetch(`${API_BASE}/api/auth/status/${code}`),
-
-  requestLinkCode: (userId: number) =>
-    apiFetch(`${API_BASE}/api/auth/link-request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
-    }),
+  requestLinkCode: () =>
+    apiFetch(`${API_BASE}/api/auth/link-request`, { method: 'POST' }),
 
   checkLinkStatus: (code: string) =>
     apiFetch(`${API_BASE}/api/auth/link-status/${code}`),
 
-  saveFeedback: (consultationId: string, rating: 'good' | 'bad') =>
+  saveFeedback: (consultationId: number, rating: 'good' | 'bad') =>
     apiFetch(`${API_BASE}/api/consultation/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

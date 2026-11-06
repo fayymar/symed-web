@@ -17,6 +17,7 @@ interface ConsultationState {
   anamnesisAnswers: string[];
   duration: string;
   result: {
+    consultationId?: number | null;
     recommendation: string;
     specialists: Specialist[];
     urgency: string;

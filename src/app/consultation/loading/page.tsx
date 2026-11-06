@@ -19,7 +19,12 @@ export default function LoadingPage() {
       try {
         await api.sendDuration(sessionId, duration);
         const data = await api.getResult(sessionId, anamnesisAnswers);
-        setResult({ recommendation: data.recommendation || '', specialists: data.specialists || [], urgency: data.urgency || 'medium' });
+        setResult({
+          consultationId: data.consultation_id ?? null,
+          recommendation: data.recommendation || '',
+          specialists: data.specialists || [],
+          urgency: data.urgency || 'medium',
+        });
         router.push('/consultation/result');
       } catch { router.push('/consultation/result'); }
     };

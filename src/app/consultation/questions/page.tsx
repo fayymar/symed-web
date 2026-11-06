@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Loader2, PenLine, Check } from 'lucide-react';
-import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useConsultation } from '@/context/ConsultationContext';
 
@@ -61,8 +60,7 @@ export default function QuestionsPage() {
       const send = async () => {
         setSending(true);
         try {
-          const user = auth.getUser();
-          await api.sendAnswers(sessionId, user?.id ?? null, answers);
+          await api.sendAnswers(sessionId, answers);
           const data = await api.sendDuration(sessionId, '');
           setAnamnesisQuestions(data.anamnesis_questions || []);
           router.push('/consultation/duration');

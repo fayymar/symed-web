@@ -132,7 +132,7 @@ export default function ProfilePage() {
     if (!userId) return;
     setLinkLoading(true);
     try {
-      const data = await api.requestLinkCode(userId);
+      const data = await api.requestLinkCode();
       if (!data.code) throw new Error('No code');
       setLinkCode(data.code);
       setLinkStatus('waiting');
