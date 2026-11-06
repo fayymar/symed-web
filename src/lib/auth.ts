@@ -50,7 +50,21 @@ export const auth = {
    */
   logout: async () => {
     auth.clear();
-    try { await supabase?.auth.signOut(); } catch { /* сеть недоступна — локальные данные уже очищены */ }
+    if (supabase) {
+      // global — отзывает refresh-токен на сервере Supabase. Если сеть или
+      // сервер недоступны, сессия осталась бы в браузере, поэтому в этом случае
+      // удаляем её хотя бы локально (scope: 'local' не делает сетевых запросов).
+      let failed = false;
+      try {
+        const { error } = await supabase.auth.signOut();
+        failed = Boolean(error);
+      } catch {
+        failed = true;
+      }
+      if (failed) {
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* уже нечего очищать */ }
+      }
+    }
     window.location.href = '/';
   },
 
