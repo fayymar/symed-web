@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2, Trash2, LogOut } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
@@ -131,6 +131,18 @@ export default function ProfilePage() {
     } catch { setError('Ошибка сохранения'); }
     setSaving(false);
   };
+
+  const [logoutAllState, setLogoutAllState] = useState<'idle' | 'busy' | 'error'>('idle');
+  async function handleLogoutAll() {
+    setLogoutAllState('busy');
+    try {
+      await api.logoutAll();
+      auth.clear();
+      window.location.href = '/auth';
+    } catch {
+      setLogoutAllState('error');
+    }
+  }
 
   async function handleDeleteAccount() {
     setDeleteError(''); setDeleting(true);
@@ -352,6 +364,26 @@ export default function ProfilePage() {
           {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
           {saving ? 'Сохранение...' : 'Сохранить профиль'}
         </button>
+
+        {/* Выход на всех устройствах */}
+        <section style={{ borderRadius: '20px', padding: '20px', background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <LogOut size={18} style={{ color: 'var(--s-text-secondary)' }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--s-text)' }}>Выйти на всех устройствах</span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--s-text-secondary)', marginBottom: 12 }}>
+            Если вы входили с чужого компьютера или потеряли телефон — завершит все сеансы, включая этот.
+            Данные не удаляются.
+          </p>
+          <button onClick={handleLogoutAll} disabled={logoutAllState === 'busy'} style={{
+            padding: '10px 18px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--s-border)', background: 'transparent', color: 'var(--s-text)',
+            opacity: logoutAllState === 'busy' ? 0.6 : 1,
+          }}>Выйти везде</button>
+          {logoutAllState === 'error' && (
+            <p style={{ color: '#ff3b30', fontSize: 13, marginTop: 10 }}>Не удалось завершить сеансы. Попробуйте ещё раз.</p>
+          )}
+        </section>
 
         {/* Удаление аккаунта */}
         <section style={{ borderRadius: '20px', padding: '20px', background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
