@@ -373,7 +373,7 @@ export default function ProfilePage() {
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--s-text-secondary)', marginBottom: 12 }}>
             Если вы входили с чужого компьютера или потеряли телефон — завершит все сеансы, включая этот.
-            Данные не удаляются.
+            Данные не удаляются. В Telegram (бот и Mini App) вход восстановится сам — по вашему аккаунту Telegram.
           </p>
           <button onClick={handleLogoutAll} disabled={logoutAllState === 'busy'} style={{
             padding: '10px 18px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer',
