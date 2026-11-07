@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { TelegramAutoLogin } from '@/components/TelegramAutoLogin';
+import ConsentGate from '@/components/ConsentGate';
 import { ConsultationProvider } from '@/context/ConsultationContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import './globals.css';
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ConsultationProvider>
             <TelegramAutoLogin />
             {children}
+            <ConsentGate />
           </ConsultationProvider>
         </ThemeProvider>
       </body>
