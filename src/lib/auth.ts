@@ -58,6 +58,8 @@ export const auth = {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.setItem('symed_user_id', String(user.id));
     localStorage.setItem(TOKEN_KEY, token);
+    // Подтверждённое согласие относится к прежнему аккаунту — новый проверяем заново
+    localStorage.removeItem(CONSENT_ACCEPTED_KEY);
   },
 
   /**
