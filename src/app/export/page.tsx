@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import PageHeader from '@/components/PageHeader';
@@ -24,42 +24,41 @@ interface Profile {
   current_medications?: string;
 }
 
+const subscribeNoop = () => () => {};
+
 export default function ExportPage() {
   const router = useRouter();
   const { theme } = useTheme();
-  const [userId] = useState<number | null>(() => auth.getUserId());
+  // На сервере пользователя нет; в браузере берём из сохранённой сессии
+  const userId = useSyncExternalStore(subscribeNoop, () => auth.getUserId(), () => null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [consultations, setConsultations] = useState<unknown[]>([]);
   const [medications, setMedications] = useState<unknown[]>([]);
   const [diary, setDiary] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(() => auth.getUserId() !== null);
+  const [loaded, setLoaded] = useState(false);
+  const loading = userId !== null && !loaded;
   const [error, setError] = useState('');
 
-  async function loadAll(id: number) {
-    setLoading(true);
-    setError('');
-    try {
-      const [profData, consData, medData, diarData] = await Promise.allSettled([
-        api.getProfile(id),
-        api.getConsultations(id),
-        api.getMedications(id),
-        api.getDiary(id),
-      ]);
-      if (profData.status === 'fulfilled') setProfile(profData.value?.profile ?? profData.value);
-      if (consData.status === 'fulfilled') setConsultations(Array.isArray(consData.value) ? consData.value : consData.value?.consultations ?? []);
-      if (medData.status === 'fulfilled') setMedications(Array.isArray(medData.value) ? medData.value : medData.value?.medications ?? []);
-      if (diarData.status === 'fulfilled') setDiary(Array.isArray(diarData.value) ? diarData.value : diarData.value?.entries ?? []);
-    } catch {
-      setError('Не удалось загрузить данные');
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Загружается один раз при открытии страницы; loading изначально true, если пользователь вошёл
   useEffect(() => {
-    if (userId !== null) {
-      loadAll(userId);
-    }
+    if (userId === null) return;
+    let cancelled = false;
+    Promise.allSettled([
+      api.getProfile(userId),
+      api.getConsultations(userId),
+      api.getMedications(userId),
+      api.getDiary(userId),
+    ])
+      .then(([profData, consData, medData, diarData]) => {
+        if (cancelled) return;
+        if (profData.status === 'fulfilled') setProfile(profData.value?.profile ?? profData.value);
+        if (consData.status === 'fulfilled') setConsultations(Array.isArray(consData.value) ? consData.value : consData.value?.consultations ?? []);
+        if (medData.status === 'fulfilled') setMedications(Array.isArray(medData.value) ? medData.value : medData.value?.medications ?? []);
+        if (diarData.status === 'fulfilled') setDiary(Array.isArray(diarData.value) ? diarData.value : diarData.value?.entries ?? []);
+      })
+      .catch(() => { if (!cancelled) setError('Не удалось загрузить данные'); })
+      .finally(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
   }, [userId]);
 
   function handlePrint() {

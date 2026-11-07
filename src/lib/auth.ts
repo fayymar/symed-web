@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { CONSENT_ACCEPTED_KEY } from './consent';
+import { API_BASE } from './config';
 
 /**
  * Сессия Supabase (Google/Apple/email) нужна сайту только на мгновение — чтобы
@@ -96,11 +97,22 @@ export const auth = {
     removeSupabaseKeys();
   },
 
-  /** Выход: полностью очищает сессию в этом браузере. */
+  /** Выход: отзывает токен на сервере и полностью очищает сессию в этом браузере. */
   logout: async () => {
-    // Сессия Supabase завершается сразу после входа (discardSupabaseSession),
-    // поэтому при выходе достаточно локальной очистки — без сетевых запросов,
-    // которые могли бы обновить и записать сессию обратно.
+    // Сервер отзывает токен, чтобы им нельзя было воспользоваться, даже если
+    // его скопировали. Запрос не ждём (keepalive доставит его и после перехода):
+    // выход в браузере не должен зависеть от сети. Сессия Supabase завершается
+    // сразу после входа (discardSupabaseSession), её здесь трогать не нужно.
+    const token = auth.getToken();
+    if (token) {
+      try {
+        fetch(`${API_BASE}/api/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+        }).catch(() => {});
+      } catch { /* сеть недоступна — локальная очистка всё равно ниже */ }
+    }
     auth.clear();
     window.location.href = '/';
   },

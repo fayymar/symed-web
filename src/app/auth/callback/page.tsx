@@ -9,10 +9,10 @@ import { api } from '@/lib/api';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => (supabase ? '' : 'Supabase not configured'));
 
   useEffect(() => {
-    if (!supabase) { setError('Supabase not configured'); return; }
+    if (!supabase) return;
 
     async function run() {
       try {

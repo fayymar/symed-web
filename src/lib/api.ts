@@ -1,7 +1,7 @@
 import { auth } from './auth';
 import { CONSENT_REQUIRED_EVENT, CONSENT_VERSION } from './consent';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://telegram-doctor-bot.onrender.com';
+import { API_BASE } from './config';
 
 /**
  * Все запросы к бэкенду идут через эту функцию: она добавляет токен сессии
@@ -65,6 +65,10 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ version: CONSENT_VERSION, source }),
     }),
+
+  // Выйти на всех устройствах: сервер отзывает все токены этого пользователя
+  logoutAll: () =>
+    apiFetch(`${API_BASE}/api/auth/logout-all`, { method: 'POST' }),
 
   // Удалить аккаунт и все данные (отзыв согласия)
   deleteAccount: () =>
