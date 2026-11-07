@@ -393,7 +393,8 @@ export default function ProfilePage() {
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--s-text-secondary)', marginBottom: 12 }}>
             Удалит профиль, историю консультаций, лекарства, дневник, показатели здоровья и согласие на обработку
-            данных — на сайте и в Telegram-боте, а также вход через Google, Apple или email. Восстановить их будет нельзя.{' '}
+            данных этого аккаунта, а также вход через Google, Apple или email. Восстановить их будет нельзя.
+            Если к аккаунту привязан Telegram, данные в боте удаляются отдельно — командой /deletedata.{' '}
             <a href="/privacy" style={{ color: 'var(--s-primary)', fontWeight: 600 }}>Политика конфиденциальности</a>
           </p>
           {deleteStep === 'idle' ? (
