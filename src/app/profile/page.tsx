@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { User, Heart, Check, Loader2, AlertCircle, Link2, MessageCircle, CheckCircle2, Trash2 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
@@ -82,6 +82,11 @@ export default function ProfilePage() {
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError,   setLinkError]   = useState('');
 
+  // Удаление аккаунта (отзыв согласия на обработку данных)
+  const [deleteStep,    setDeleteStep]    = useState<'idle' | 'confirm'>('idle');
+  const [deleting,      setDeleting]      = useState(false);
+  const [deleteError,   setDeleteError]   = useState('');
+
   useEffect(() => {
     if (!auth.isLoggedIn()) { router.push('/auth'); return; }
     const user = auth.getUser()!;
@@ -126,6 +131,17 @@ export default function ProfilePage() {
     } catch { setError('Ошибка сохранения'); }
     setSaving(false);
   };
+
+  async function handleDeleteAccount() {
+    setDeleteError(''); setDeleting(true);
+    try {
+      await api.deleteAccount();
+      auth.logout();
+    } catch {
+      setDeleteError('Не удалось удалить данные. Попробуйте ещё раз или отправьте /deletedata боту в Telegram.');
+      setDeleting(false);
+    }
+  }
 
   async function handleLinkTelegram() {
     const clean = linkCode.replace(/[^0-9A-ZА-Яа-яa-z]/g, '');
@@ -336,6 +352,41 @@ export default function ProfilePage() {
           {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
           {saving ? 'Сохранение...' : 'Сохранить профиль'}
         </button>
+
+        {/* Удаление аккаунта */}
+        <section style={{ borderRadius: '20px', padding: '20px', background: 'var(--s-surface)', border: '1px solid var(--s-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Trash2 size={18} style={{ color: '#ff3b30' }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--s-text)' }}>Удалить аккаунт</span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--s-text-secondary)', marginBottom: 12 }}>
+            Удалит профиль, историю консультаций, лекарства, дневник, показатели здоровья и согласие на обработку
+            данных — на сайте и в Telegram-боте. Восстановить их будет нельзя.{' '}
+            <a href="/privacy" style={{ color: 'var(--s-primary)', fontWeight: 600 }}>Политика конфиденциальности</a>
+          </p>
+          {deleteStep === 'idle' ? (
+            <button onClick={() => setDeleteStep('confirm')} style={{
+              padding: '10px 18px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              border: '1px solid #ff3b30', background: 'transparent', color: '#ff3b30',
+            }}>Удалить аккаунт и все данные</button>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button onClick={handleDeleteAccount} disabled={deleting} style={{
+                padding: '10px 18px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                border: 'none', background: '#ff3b30', color: '#fff', opacity: deleting ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                {deleting && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+                Да, удалить навсегда
+              </button>
+              <button onClick={() => setDeleteStep('idle')} disabled={deleting} style={{
+                padding: '10px 18px', borderRadius: 999, fontSize: 14, cursor: 'pointer',
+                border: '1px solid var(--s-border)', background: 'transparent', color: 'var(--s-text-secondary)',
+              }}>Отмена</button>
+            </div>
+          )}
+          {deleteError && <p style={{ color: '#ff3b30', fontSize: 13, marginTop: 10 }}>{deleteError}</p>}
+        </section>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

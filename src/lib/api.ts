@@ -1,4 +1,5 @@
 import { auth } from './auth';
+import { CONSENT_REQUIRED_EVENT, CONSENT_VERSION } from './consent';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://telegram-doctor-bot.onrender.com';
 
@@ -21,6 +22,10 @@ async function apiFetch(url: string, options?: RequestInit) {
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try { const j = await res.json(); msg = j.error || msg; } catch {}
+    // Бэкенд не принимает данные без согласия на обработку — показываем окно согласия
+    if (res.status === 403 && msg === 'consent_required' && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(CONSENT_REQUIRED_EVENT));
+    }
     throw new Error(msg);
   }
   return res.json();
@@ -37,13 +42,33 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // Пользователь определяется по токену; без токена консультация идёт в гостевом режиме
-  startConsultation: (symptoms: string) =>
+  // Пользователь определяется по токену; без токена консультация идёт в гостевом режиме.
+  // Гость должен дать согласие прямо в форме — тогда передаём его версию.
+  startConsultation: (symptoms: string, guestConsent = false) =>
     apiFetch(`${API_BASE}/api/consultation/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ symptoms }),
+      body: JSON.stringify(
+        guestConsent
+          ? { symptoms, consent_version: CONSENT_VERSION, consent_source: 'web' }
+          : { symptoms },
+      ),
     }),
+
+  // Согласие на обработку данных (для вошедших пользователей)
+  getConsent: () =>
+    apiFetch(`${API_BASE}/api/consent`),
+
+  acceptConsent: (source: 'web' | 'miniapp') =>
+    apiFetch(`${API_BASE}/api/consent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: CONSENT_VERSION, source }),
+    }),
+
+  // Удалить аккаунт и все данные (отзыв согласия)
+  deleteAccount: () =>
+    apiFetch(`${API_BASE}/api/account`, { method: 'DELETE' }),
 
   sendAnswers: (sessionId: string, answers: string[]) =>
     apiFetch(`${API_BASE}/api/consultation/answer`, {

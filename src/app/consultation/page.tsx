@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Stethoscope, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useConsultation } from '@/context/ConsultationContext';
+import ConsentText from '@/components/ConsentText';
+
+const subscribeNoop = () => () => {};
 
 export default function SymptomsPage() {
   const router = useRouter();
@@ -13,18 +16,23 @@ export default function SymptomsPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Гость (без входа) даёт согласие на обработку данных прямо здесь, перед каждой консультацией
+  // (на сервере считаем, что пользователь вошёл, — галочка появится после гидратации)
+  const isGuest = useSyncExternalStore(subscribeNoop, () => !auth.isLoggedIn(), () => false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => { reset(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async () => {
     if (text.trim().length < 5) { setError('Опишите симптомы подробнее'); return; }
+    if (isGuest && !agreed) { setError('Чтобы продолжить, отметьте согласие на обработку данных'); return; }
     setError(''); setLoading(true);
     try {
       const user = auth.getUser();
 
       // Запускаем консультацию и параллельно проверяем профиль (если залогинен)
       const [data, profileData] = await Promise.all([
-        api.startConsultation(text.trim()),
+        api.startConsultation(text.trim(), isGuest && agreed),
         user && auth.isLoggedIn() ? api.getProfile(user.id) : Promise.resolve(null),
       ]);
 
@@ -47,7 +55,9 @@ export default function SymptomsPage() {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
-      if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
+      if (msg === 'consent_required') {
+        setError('Нужно согласие на обработку данных — подтвердите его в открывшемся окне.');
+      } else if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
         setError('Сервис временно перегружен. Попробуйте через минуту.');
       } else {
         setError('Ошибка соединения. Попробуйте ещё раз.');
@@ -101,7 +111,18 @@ export default function SymptomsPage() {
           </p>
         )}
 
-        <button onClick={handleSubmit} disabled={loading || text.trim().length < 5}
+        {isGuest && (
+          <div className="rounded-2xl p-4 mb-4"
+            style={{ background: 'var(--s-surface)', border: '1px solid var(--s-separator)' }}>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                className="mt-1 w-4 h-4 flex-shrink-0" style={{ accentColor: 'var(--s-blue)' }} />
+              <ConsentText compact />
+            </label>
+          </div>
+        )}
+
+        <button onClick={handleSubmit} disabled={loading || text.trim().length < 5 || (isGuest && !agreed)}
           className="w-full py-4 rounded-full font-semibold text-base text-white transition hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
           style={{ background: 'var(--s-blue)' }}>
           {loading

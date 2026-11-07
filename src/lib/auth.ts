@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { CONSENT_ACCEPTED_KEY } from './consent';
 
 /**
  * Сессия Supabase (Google/Apple/email) нужна сайту только на мгновение — чтобы
@@ -57,6 +58,8 @@ export const auth = {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.setItem('symed_user_id', String(user.id));
     localStorage.setItem(TOKEN_KEY, token);
+    // Подтверждённое согласие относится к прежнему аккаунту — новый проверяем заново
+    localStorage.removeItem(CONSENT_ACCEPTED_KEY);
   },
 
   /**
@@ -89,6 +92,7 @@ export const auth = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('symed_user_id');
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(CONSENT_ACCEPTED_KEY);
     removeSupabaseKeys();
   },
 
