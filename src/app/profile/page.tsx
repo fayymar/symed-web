@@ -43,6 +43,9 @@ function toggleChip(current: string, chip: string): string {
   if (idx >= 0) items.splice(idx, 1); else items.push(chip);
   return items.join(', ');
 }
+function splitList(value: string): string[] {
+  return value.split(',').map(s => s.trim()).filter(Boolean);
+}
 function hasChip(current: string, chip: string): boolean {
   return current.split(',').map(s => s.trim()).some(s => s.toLowerCase() === chip.toLowerCase());
 }
@@ -71,6 +74,7 @@ export default function ProfilePage() {
   const { theme } = useTheme();
   const [form,    setForm]    = useState<ProfileForm>(empty);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState('');
@@ -107,7 +111,11 @@ export default function ProfilePage() {
           physical_activity: p.physical_activity || '',
         });
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {
+      // Без загруженного профиля сохранение пустой формы стёрло бы данные
+      setLoadFailed(true);
+      setError('Не удалось загрузить профиль. Обновите страницу.');
+    }).finally(() => setLoading(false));
 
   }, [router]);
 
@@ -117,12 +125,19 @@ export default function ProfilePage() {
     setForm(f => ({ ...f, [key]: v }));
 
   const handleSave = async () => {
+    if (loadFailed) { setError('Не удалось загрузить профиль. Обновите страницу.'); return; }
     if (!form.full_name.trim()) { setError('Укажите имя'); return; }
     setError(''); setSaving(true);
     const userId = auth.getUserId()!;
     try {
       await api.saveProfile(userId, {
         ...form,
+        // В базе это списки, а не строка «Диабет, Гипертония»
+        chronic_diseases: splitList(form.chronic_diseases),
+        hereditary: splitList(form.hereditary),
+        birthdate: form.birthdate || null,
+        gender: form.gender || null,
+        physical_activity: form.physical_activity || null,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
       });
