@@ -43,6 +43,9 @@ function toggleChip(current: string, chip: string): string {
   if (idx >= 0) items.splice(idx, 1); else items.push(chip);
   return items.join(', ');
 }
+function splitList(value: string): string[] {
+  return value.split(',').map(s => s.trim()).filter(Boolean);
+}
 function hasChip(current: string, chip: string): boolean {
   return current.split(',').map(s => s.trim()).some(s => s.toLowerCase() === chip.toLowerCase());
 }
@@ -123,6 +126,12 @@ export default function ProfilePage() {
     try {
       await api.saveProfile(userId, {
         ...form,
+        // В базе это списки, а не строка «Диабет, Гипертония»
+        chronic_diseases: splitList(form.chronic_diseases),
+        hereditary: splitList(form.hereditary),
+        birthdate: form.birthdate || null,
+        gender: form.gender || null,
+        physical_activity: form.physical_activity || null,
         height: form.height ? Number(form.height) : null,
         weight: form.weight ? Number(form.weight) : null,
       });
