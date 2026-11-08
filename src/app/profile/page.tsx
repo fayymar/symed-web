@@ -74,6 +74,7 @@ export default function ProfilePage() {
   const { theme } = useTheme();
   const [form,    setForm]    = useState<ProfileForm>(empty);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState('');
@@ -110,7 +111,11 @@ export default function ProfilePage() {
           physical_activity: p.physical_activity || '',
         });
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {
+      // Без загруженного профиля сохранение пустой формы стёрло бы данные
+      setLoadFailed(true);
+      setError('Не удалось загрузить профиль. Обновите страницу.');
+    }).finally(() => setLoading(false));
 
   }, [router]);
 
@@ -120,6 +125,7 @@ export default function ProfilePage() {
     setForm(f => ({ ...f, [key]: v }));
 
   const handleSave = async () => {
+    if (loadFailed) { setError('Не удалось загрузить профиль. Обновите страницу.'); return; }
     if (!form.full_name.trim()) { setError('Укажите имя'); return; }
     setError(''); setSaving(true);
     const userId = auth.getUserId()!;
